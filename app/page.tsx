@@ -107,7 +107,6 @@ export default function Home() {
           {stages.map((s, i) => (
             <li
               key={s.route}
-              data-route={s.route}
               className={`max-w-md ${i % 2 ? "md:ml-auto" : ""}`}
             >
               <p className="text-sm font-medium uppercase tracking-wider text-ink-2">{s.place}</p>
@@ -133,7 +132,7 @@ export default function Home() {
           </Link>
         </div>
         <p className="mt-4 max-w-xl text-ink-2">Демо-каталог: тестовые лоты из Кореи и Китая. Цена — под ключ в Краснодаре.</p>
-        <div className="mt-8 rounded-lg bg-ground/80 border-b border-line">
+        <div className="mt-8 border-b border-line">
           {featured.map((c) => (
             <CarRow key={c.id} car={c} />
           ))}
@@ -141,7 +140,7 @@ export default function Home() {
       </section>
 
       {/* Бюджет */}
-      <section className="relative z-10 bg-ground-2">
+      <section className="relative z-10 bg-ground-2/60">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
           <h2 className={`${h2} mb-10`}>Что вы получите за&nbsp;свой бюджет</h2>
           <BudgetPicker items={budgetItems} />
@@ -175,7 +174,7 @@ export default function Home() {
           <h2 className={h2}>Частые вопросы</h2>
           <div className="mt-8 border-b border-line">
             {faq.map((f) => (
-              <details key={f.q} className="group border-t border-line bg-ground/80">
+              <details key={f.q} className="group border-t border-line">
                 <summary className="flex min-h-14 cursor-pointer items-center justify-between gap-4 py-4 text-lg font-semibold">
                   {f.q}
                   <span aria-hidden className="faq-plus text-2xl font-normal transition-transform">+</span>

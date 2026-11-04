@@ -12,7 +12,7 @@ export const site = {
 export const telegramUrl = (text?: string) =>
   `https://t.me/${site.telegram}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
 
-// Этапы сделки синхронизированы с точками маршрута (data-route в разметке).
+// Этапы сделки.
 export const stages = [
   {
     route: "ports",
