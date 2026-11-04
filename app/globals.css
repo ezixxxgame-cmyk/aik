@@ -1,0 +1,184 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root {
+  --ground: #dde4eb;
+  --ground-2: #c8d2dc;
+  --paper: #eef2f5;
+  --ink: #2f3b5c;
+  --ink-2: #4b5775;
+  --line: rgb(47 59 92 / 0.16);
+  --route: rgb(47 59 92 / 0.26);
+  --key: #f6c744;
+  --key-hover: #ffd35c;
+  --on-key: #262f4a;
+  --band: #2f3b5c;
+  --on-band: #e9edf2;
+  --on-band-2: #b9c3d3;
+  --danger: #a83a32;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --ground: #151b2a;
+  --ground-2: #1c2436;
+  --paper: #222b40;
+  --ink: #e3e8ee;
+  --ink-2: #a9b4c5;
+  --line: rgb(200 210 220 / 0.13);
+  --route: rgb(200 210 220 / 0.22);
+  --band: #0f1420;
+  --on-band: #e3e8ee;
+  --on-band-2: #a9b4c5;
+  --danger: #f08a7e;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-ground: var(--ground);
+  --color-ground-2: var(--ground-2);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-line: var(--line);
+  --color-key: var(--key);
+  --color-key-hover: var(--key-hover);
+  --color-on-key: var(--on-key);
+  --color-band: var(--band);
+  --color-on-band: var(--on-band);
+  --color-on-band-2: var(--on-band-2);
+  --color-danger: var(--danger);
+  --font-display: var(--font-jost);
+  --font-sans: var(--font-onest);
+}
+
+html {
+  background: var(--ground);
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-onest), system-ui, sans-serif;
+  overflow-x: clip;
+}
+
+::selection {
+  background: var(--key);
+  color: var(--on-key);
+}
+
+:focus-visible {
+  outline: 2px solid var(--key);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+a {
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+}
+
+input,
+select,
+textarea {
+  caret-color: var(--key);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.display {
+  font-family: var(--font-jost), sans-serif;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+/* Чертёжная рамка: уголки вместо полной обводки */
+.ticks {
+  background:
+    linear-gradient(var(--ink-2), var(--ink-2)) top left / 10px 1px no-repeat,
+    linear-gradient(var(--ink-2), var(--ink-2)) top left / 1px 10px no-repeat,
+    linear-gradient(var(--ink-2), var(--ink-2)) top right / 10px 1px no-repeat,
+    linear-gradient(var(--ink-2), var(--ink-2)) top right / 1px 10px no-repeat,
+    linear-gradient(var(--ink-2), var(--ink-2)) bottom left / 10px 1px no-repeat,
+    linear-gradient(var(--ink-2), var(--ink-2)) bottom left / 1px 10px no-repeat,
+    linear-gradient(var(--ink-2), var(--ink-2)) bottom right / 10px 1px no-repeat,
+    linear-gradient(var(--ink-2), var(--ink-2)) bottom right / 1px 10px no-repeat,
+    var(--ground-2);
+}
+
+details > summary {
+  list-style: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
+details[open] .faq-plus {
+  transform: rotate(45deg);
+}
+
+/* Маршрут */
+.route-base,
+.route-done {
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+.route-base {
+  stroke: var(--route);
+  stroke-dasharray: 2 6;
+}
+.route-done {
+  stroke: var(--ink);
+  opacity: 0.32;
+}
+.route-dot {
+  fill: var(--ground);
+  stroke: var(--ink-2);
+  stroke-width: 1.5;
+  transition: fill 0.3s, stroke 0.3s;
+}
+.route-dot.on {
+  fill: var(--key);
+  stroke: var(--ink);
+}
+.route-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  fill: var(--ink-2);
+  opacity: 0.85;
+}
+.route-icon {
+  color: var(--ink);
+  transition: opacity 0.3s;
+}
+.route-icon > circle {
+  fill: var(--ground);
+  stroke: var(--ink);
+  stroke-opacity: 0.5;
+  stroke-width: 1.5;
+}
+.route-swap {
+  transition: opacity 0.25s;
+}
+.route-key {
+  color: var(--key);
+}
+[data-theme="light"] .route-key {
+  color: #c99a12;
+}
+@media (max-width: 767px) {
+  .route-label {
+    display: none;
+  }
+}
