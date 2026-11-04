@@ -9,7 +9,6 @@
   --ink: #2f3b5c;
   --ink-2: #4b5775;
   --line: rgb(47 59 92 / 0.16);
-  --route: rgb(47 59 92 / 0.26);
   --key: #f6c744;
   --key-hover: #ffd35c;
   --on-key: #262f4a;
@@ -17,6 +16,7 @@
   --on-band: #e9edf2;
   --on-band-2: #b9c3d3;
   --danger: #a83a32;
+  --route-done: #c99a12;
   color-scheme: light;
 }
 
@@ -27,11 +27,11 @@
   --ink: #e3e8ee;
   --ink-2: #a9b4c5;
   --line: rgb(200 210 220 / 0.13);
-  --route: rgb(200 210 220 / 0.22);
   --band: #0f1420;
   --on-band: #e3e8ee;
   --on-band-2: #a9b4c5;
   --danger: #f08a7e;
+  --route-done: #f6c744;
   color-scheme: dark;
 }
 
@@ -125,60 +125,69 @@ details[open] .faq-plus {
   transform: rotate(45deg);
 }
 
-/* Маршрут */
-.route-base,
-.route-done {
+/* Карта маршрута */
+.map-land {
   fill: none;
+  stroke: var(--ink);
+  stroke-opacity: 0.12;
+  stroke-width: 1;
+}
+.map-russia {
+  fill: var(--ink);
+  fill-opacity: 0.055;
+  stroke: var(--ink);
+  stroke-opacity: 0.3;
+  stroke-width: 1;
+}
+.map-route {
+  fill: none;
+  stroke: var(--ink);
+  stroke-opacity: 0.4;
   stroke-width: 1.5;
+  stroke-dasharray: 2 6;
   stroke-linecap: round;
 }
-.route-base {
-  stroke: var(--route);
-  stroke-dasharray: 2 6;
+.map-done {
+  fill: none;
+  stroke: var(--route-done);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
-.route-done {
-  stroke: var(--ink);
-  opacity: 0.32;
-}
-.route-dot {
+.map-dot {
   fill: var(--ground);
-  stroke: var(--ink-2);
-  stroke-width: 1.5;
-  transition: fill 0.3s, stroke 0.3s;
-}
-.route-dot.on {
-  fill: var(--key);
   stroke: var(--ink);
+  stroke-width: 1.5;
+  transition: fill 0.3s;
 }
-.route-label {
-  font-size: 11px;
+.map-dot.on {
+  fill: var(--key);
+}
+.map-dot-minor {
+  fill: var(--ink);
+  fill-opacity: 0.35;
+}
+.map-label {
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  fill: var(--ink-2);
-  opacity: 0.85;
+  fill: var(--ink);
+  fill-opacity: 0.6;
 }
-.route-icon {
+.map-label-minor {
+  fill: var(--ink);
+  fill-opacity: 0.32;
+}
+.map-icon {
   color: var(--ink);
   transition: opacity 0.3s;
 }
-.route-icon > circle {
+.map-icon > circle {
   fill: var(--ground);
   stroke: var(--ink);
   stroke-opacity: 0.5;
   stroke-width: 1.5;
 }
-.route-swap {
-  transition: opacity 0.25s;
-}
-.route-key {
-  color: var(--key);
-}
-[data-theme="light"] .route-key {
-  color: #c99a12;
-}
-@media (max-width: 767px) {
-  .route-label {
-    display: none;
-  }
+.map-key {
+  color: var(--route-done);
 }

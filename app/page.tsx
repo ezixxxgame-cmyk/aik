@@ -20,10 +20,6 @@ const budgetItems = cars.map((c) => ({
   blocked: blockers(c).length > 0,
 }));
 
-// Позиция точки маршрута для этапа: на мобиле — левый край, на десктопе — напротив текста
-const stageX = ["0.08", "0.08", "0.08", "0.08"];
-const stageXMd = ["0.7", "0.3", "0.7", "0.3"];
-
 const stories = [
   { car: "Kia K5, 2023", city: "Краснодар", days: 29 },
   { car: "Hyundai Avante, 2024", city: "Ростов-на-Дону", days: 31 },
@@ -63,7 +59,7 @@ export default function Home() {
             </a>
           </div>
 
-          <div data-route="origin" className="mt-10 border-t border-line pt-4">
+          <div className="mt-10 border-t border-line pt-4">
             <ol className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm font-medium">
               <li className="flex items-center gap-1.5"><ShipIcon className="size-5" /> Пусан</li>
               <li className="text-ink-2">или</li>
@@ -112,9 +108,7 @@ export default function Home() {
             <li
               key={s.route}
               data-route={s.route}
-              data-x={stageX[i]}
-              data-x-md={stageXMd[i]}
-              className={`max-w-md pl-12 md:pl-0 ${i % 2 ? "md:ml-auto" : ""}`}
+              className={`max-w-md ${i % 2 ? "md:ml-auto" : ""}`}
             >
               <p className="text-sm font-medium uppercase tracking-wider text-ink-2">{s.place}</p>
               <h3 className="mt-1 font-display text-3xl font-extrabold uppercase leading-none sm:text-4xl">{s.title}</h3>
