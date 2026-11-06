@@ -11,7 +11,22 @@ type Pt = [number, number];
 type Line = { pts: Pt[]; cum: number[]; total: number };
 type View = { s: number; rot: 0 | 90; tx: number; ty: number };
 
-const prep = (pts: Pt[]): Line => {
+// Сглаживание опорных точек срезанием углов (Чайкин): без выбросов за пределы ломаной
+const smooth = (pts: Pt[], passes = 4): Pt[] => {
+  for (let n = 0; n < passes; n++) {
+    const out: Pt[] = [pts[0]];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [a, b] = [pts[i], pts[i + 1]];
+      out.push([a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25], [a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75]);
+    }
+    out.push(pts[pts.length - 1]);
+    pts = out;
+  }
+  return pts;
+};
+
+const prep = (raw: Pt[]): Line => {
+  const pts = smooth(raw);
   const cum = [0];
   for (let i = 1; i < pts.length; i++)
     cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
@@ -19,7 +34,7 @@ const prep = (pts: Pt[]): Line => {
 };
 const lines = { kr: prep(route.kr), cn: prep(route.cn), trunk: prep(route.trunk) };
 
-// Точка на ломаной и пройденная часть пути для доли t
+// Точка на линии и пройденная часть пути для доли t
 const walk = ({ pts, cum, total }: Line, t: number) => {
   const l = Math.min(Math.max(t, 0), 1) * total;
   let i = 1;
@@ -32,16 +47,23 @@ const walk = ({ pts, cum, total }: Line, t: number) => {
 
 const poly = (pts: Pt[]) => "M" + pts.map((q) => q.join(" ")).join("L");
 
+// Иконки нарисованы носом вправо; если линия в целом идёт влево по экрану — отражаем
+const facesLeft = ({ pts }: Line, rot: number) => {
+  const [a, b] = [pts[0], pts[pts.length - 1]];
+  return (rot ? b[1] - a[1] : b[0] - a[0]) < 0;
+};
+
 // Доля скролла, на которой морская/китайская ветка доходит до Владивостока
 const BRANCH = 0.2;
 // Точки остановки для prefers-reduced-motion: порты, Владивосток, в пути, Краснодар
 const STOPS = [0, BRANCH, 0.6, 1];
+const ICON = 32;
 
 export default function RouteLine() {
   const [view, setView] = useState<View | null>(null);
   const done = useRef<Record<string, SVGPathElement | null>>({});
   const icons = useRef<Record<string, SVGGElement | null>>({});
-  const dots = useRef<Record<string, SVGCircleElement | null>>({});
+  const dots = useRef<Record<string, SVGGElement | null>>({});
 
   useEffect(() => {
     const fit = () => {
@@ -65,15 +87,18 @@ export default function RouteLine() {
     const { s, rot } = view;
     const reduce = matchMedia("(prefers-reduced-motion: reduce)");
     let raf = 0;
+    let cur = -1;
 
-    const update = () => {
-      raf = 0;
+    const target = () => {
       const lead = document.getElementById("lead");
       const max = lead
         ? lead.getBoundingClientRect().top + scrollY - innerHeight
         : document.documentElement.scrollHeight - innerHeight;
-      let p = max > 0 ? Math.min(Math.max(scrollY / max, 0), 1) : 0;
-      if (reduce.matches) p = Math.max(...STOPS.filter((v) => v <= p + 0.001));
+      const p = max > 0 ? Math.min(Math.max(scrollY / max, 0), 1) : 0;
+      return reduce.matches ? Math.max(...STOPS.filter((v) => v <= p + 0.001)) : p;
+    };
+
+    const draw = (p: number) => {
       const onTrunk = p >= BRANCH;
       const finished = p >= 0.99;
 
@@ -88,7 +113,7 @@ export default function RouteLine() {
         const g = icons.current[key];
         if (!g) return;
         g.setAttribute("transform", `translate(${at[0]} ${at[1]}) rotate(${rot}) scale(${1 / s})`);
-        g.style.opacity = on ? "1" : "0";
+        g.classList.toggle("off", !on);
       };
       put("kr", kr.p, !onTrunk);
       put("cn", cn.p, !onTrunk);
@@ -101,13 +126,23 @@ export default function RouteLine() {
         Владивосток: onTrunk,
         Краснодар: finished,
       };
-      for (const [name, c] of Object.entries(dots.current)) c?.classList.toggle("on", !!lit[name]);
+      for (const [name, g] of Object.entries(dots.current)) g?.classList.toggle("on", !!lit[name]);
+    };
+
+    // Иконки догоняют скролл с мягким затуханием, а не прыгают за колесом мыши
+    const tick = () => {
+      raf = 0;
+      const t = target();
+      cur = cur < 0 || reduce.matches ? t : cur + (t - cur) * 0.14;
+      if (Math.abs(t - cur) < 0.0004) cur = t;
+      draw(cur);
+      if (cur !== t) raf = requestAnimationFrame(tick);
     };
 
     const onScroll = () => {
-      if (!raf) raf = requestAnimationFrame(update);
+      if (!raf) raf = requestAnimationFrame(tick);
     };
-    update();
+    tick();
     const ro = new ResizeObserver(onScroll);
     ro.observe(document.body);
     addEventListener("scroll", onScroll, { passive: true });
@@ -120,6 +155,7 @@ export default function RouteLine() {
 
   if (!view) return <div aria-hidden className="pointer-events-none fixed inset-0 z-0" />;
   const { s, rot, tx, ty } = view;
+  const icon = { width: ICON, height: ICON, x: -ICON / 2, y: -ICON / 2 };
 
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
@@ -129,49 +165,73 @@ export default function RouteLine() {
           <path d={russia} className="map-russia" vectorEffect="non-scaling-stroke" />
           {(["kr", "cn", "trunk"] as const).map((k) => (
             <g key={k}>
-              <path d={poly(route[k])} className="map-route" vectorEffect="non-scaling-stroke" />
+              <path d={poly(lines[k].pts)} className="map-route" vectorEffect="non-scaling-stroke" />
               <path ref={(el) => void (done.current[k] = el)} className="map-done" vectorEffect="non-scaling-stroke" />
             </g>
           ))}
           {cities.map((c) => (
-            <g key={c.name} transform={`translate(${c.p[0]} ${c.p[1]}) rotate(${rot}) scale(${1 / s})`}>
-              <circle
-                ref={c.main ? (el) => void (dots.current[c.name] = el) : undefined}
-                r={c.main ? 4.5 : 2.5}
-                className={c.main ? "map-dot" : "map-dot-minor"}
-              />
-              <text {...labelPos(c.name, c.main, rot)}
-                fontSize={c.main ? 12 : 10.5}
-                className={c.main ? "map-label" : "map-label-minor"}
-              >
+            <g
+              key={c.name}
+              ref={c.main ? (el) => void (dots.current[c.name] = el) : undefined}
+              transform={`translate(${c.p[0]} ${c.p[1]}) rotate(${rot}) scale(${1 / s})`}
+              className={c.main ? "map-city" : `map-city-minor ${MOBILE_LABELS.has(c.name) ? "" : "map-city-sm"}`}
+            >
+              {c.main && <circle r={5} className="map-pulse" />}
+              <circle r={c.main ? 4.5 : 2.5} className={c.main ? "map-dot" : "map-dot-minor"} />
+              <text {...labelPos(c.name, c.main, rot)} fontSize={c.main ? 12 : 10.5} className={c.main ? "map-label" : "map-label-minor"}>
                 {c.name}
               </text>
             </g>
           ))}
-          <Marker refFn={(el) => void (icons.current.kr = el)}><ShipIcon x={-12} y={-12} /></Marker>
-          <Marker refFn={(el) => void (icons.current.cn = el)}><CarIcon x={-12} y={-12} /></Marker>
-          <Marker refFn={(el) => void (icons.current.truck = el)}><TruckIcon x={-12} y={-12} /></Marker>
-          <Marker refFn={(el) => void (icons.current.key = el)} keyIcon><KeyIcon x={-12} y={-12} /></Marker>
+          <Marker refFn={(el) => void (icons.current.kr = el)} flip={facesLeft(lines.kr, rot)}>
+            <ShipIcon {...icon} fill="var(--ground)" />
+          </Marker>
+          <Marker refFn={(el) => void (icons.current.cn = el)} flip={facesLeft(lines.cn, rot)}>
+            <CarIcon {...icon} fill="var(--ground)" />
+          </Marker>
+          <Marker refFn={(el) => void (icons.current.truck = el)} flip={facesLeft(lines.trunk, rot)}>
+            <TruckIcon {...icon} fill="var(--ground)" />
+          </Marker>
+          <Marker refFn={(el) => void (icons.current.key = el)}>
+            <KeyIcon {...icon} width={ICON + 6} height={ICON + 6} x={-(ICON + 6) / 2} y={-(ICON + 6) / 2} fill="var(--key)" className="map-key" />
+          </Marker>
         </g>
       </svg>
     </div>
   );
 }
 
-// На вертикальной карте порты у правого края — подписи уходят влево
+// На телефоне карта мелкая: подписываем только города, которые не налезают друг на друга
+const MOBILE_LABELS = new Set(["Москва", "Санкт-Петербург", "Екатеринбург", "Новосибирск", "Иркутск", "Якутск", "Норильск", "Магадан", "Мурманск"]);
+
+// Подписи справа от точки; исключения — где соседи или край экрана
 function labelPos(name: string, main: boolean, rot: number): { x: number; y: number; textAnchor: "start" | "middle" | "end" } {
   if (rot && name === "Пусан") return { x: 0, y: 20, textAnchor: "middle" };
   if (rot && name === "Суйфэньхэ") return { x: -9, y: 12, textAnchor: "end" };
   if (rot && main) return { x: -9, y: -6, textAnchor: "end" };
   if (name === "Суйфэньхэ") return { x: -9, y: -7, textAnchor: "end" };
-  return { x: 9, y: name === "Пусан" ? 14 : -7, textAnchor: "start" };
+  if (main) return { x: 9, y: name === "Пусан" ? 14 : -7, textAnchor: "start" };
+  const side = rot ? undefined : SIDE[name];
+  if (side === "left") return { x: -6, y: 3.5, textAnchor: "end" };
+  if (side === "above") return { x: 0, y: -7, textAnchor: "middle" };
+  if (side === "below") return { x: 0, y: 14, textAnchor: "middle" };
+  return { x: 6, y: 3.5, textAnchor: "start" };
 }
+const SIDE: Record<string, "left" | "above" | "below"> = {
+  Самара: "above",
+  Волгоград: "below",
+  Новосибирск: "below",
+  Иркутск: "left",
+  "Улан-Удэ": "below",
+  "Петропавловск-Камчатский": "left",
+};
 
-function Marker({ refFn, keyIcon, children }: { refFn: (el: SVGGElement | null) => void; keyIcon?: boolean; children: React.ReactNode }) {
+function Marker({ refFn, flip, children }: { refFn: (el: SVGGElement | null) => void; flip?: boolean; children: React.ReactNode }) {
   return (
-    <g ref={refFn} className={`map-icon ${keyIcon ? "map-key" : ""}`} style={{ opacity: 0 }}>
-      <circle r={19} />
-      {children}
+    <g ref={refFn} className="map-icon off">
+      <g className="map-icon-in" style={flip ? { scale: "-1 1" } : undefined}>
+        {children}
+      </g>
     </g>
   );
 }

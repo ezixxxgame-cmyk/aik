@@ -9,6 +9,16 @@ export const site = {
   address: "г. Краснодар, адрес офиса уточняется",
 };
 
+// Реквизиты оператора персональных данных — заглушки, заполнить перед запуском.
+export const legal = {
+  operator: "[Наименование ИП / ООО]",
+  inn: "[ИНН]",
+  ogrn: "[ОГРН / ОГРНИП]",
+  address: "[Юридический адрес]",
+  email: "[e-mail для обращений по персональным данным]",
+  updated: "[дата редакции]",
+};
+
 export const telegramUrl = (text?: string) =>
   `https://t.me/${site.telegram}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
 

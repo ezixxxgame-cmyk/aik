@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { site, telegramUrl } from "@/config/site";
 
 export default function Footer() {
@@ -7,7 +8,13 @@ export default function Footer() {
         <p>
           © 2026 {site.name} {site.fullName}. Демо-версия: данные, цены и ставки тестовые.
         </p>
-        <div className="flex gap-5">
+        <div className="flex flex-wrap gap-x-5 gap-y-2">
+          <Link href="/privacy" className="underline">
+            Политика конфиденциальности
+          </Link>
+          <Link href="/consent" className="underline">
+            Согласие на обработку данных
+          </Link>
           <a href={telegramUrl()} target="_blank" rel="noopener noreferrer" className="underline">
             @{site.telegram}
           </a>

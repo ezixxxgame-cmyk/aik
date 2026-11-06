@@ -125,18 +125,23 @@ export default function Home() {
 
       {/* Подборка */}
       <section className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <h2 className={h2}>Сейчас в&nbsp;подборке</h2>
-          <Link href="/catalog" className="inline-flex h-11 items-center gap-2 font-semibold underline">
-            Смотреть все {cars.length} <ArrowIcon className="size-5" />
-          </Link>
-        </div>
+        <h2 className={h2}>Сейчас в&nbsp;подборке</h2>
         <p className="mt-4 max-w-xl text-ink-2">Демо-каталог: тестовые лоты из Кореи и Китая. Цена — под ключ в Краснодаре.</p>
         <div className="mt-8 border-b border-line">
           {featured.map((c) => (
             <CarRow key={c.id} car={c} />
           ))}
         </div>
+        <Link
+          href="/catalog"
+          className="group mt-8 flex h-16 w-full items-center justify-between gap-4 rounded-md bg-ink px-6 text-ground shadow-[0_10px_24px_-14px_rgb(47_59_92/0.7)] transition-colors hover:bg-ink-2 sm:inline-flex sm:w-auto sm:min-w-[22rem]"
+        >
+          <span className="font-display text-xl font-semibold uppercase tracking-wide">Открыть каталог</span>
+          <span className="flex items-center gap-2 text-sm text-ground/70">
+            <span className="num">{cars.length} авто</span>
+            <ArrowIcon className="size-6 text-ground transition-transform group-hover:translate-x-1 motion-reduce:transition-none" />
+          </span>
+        </Link>
       </section>
 
       {/* Бюджет */}

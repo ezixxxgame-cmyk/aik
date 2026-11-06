@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { submitLead } from "@/lib/lead";
 
@@ -82,7 +83,17 @@ export default function LeadForm() {
         >
           {state === "sending" ? "Отправляем…" : "Отправить заявку"}
         </button>
-        <p className="text-xs text-on-band-2">Нажимая кнопку, вы соглашаетесь на обработку персональных данных.</p>
+        <p className="text-xs leading-relaxed text-on-band-2">
+          Нажимая кнопку, вы даёте{" "}
+          <Link href="/consent" target="_blank" className="underline decoration-on-band-2/50 underline-offset-2 hover:text-on-band">
+            согласие на обработку персональных данных
+          </Link>{" "}
+          и принимаете{" "}
+          <Link href="/privacy" target="_blank" className="underline decoration-on-band-2/50 underline-offset-2 hover:text-on-band">
+            политику конфиденциальности
+          </Link>
+          .
+        </p>
       </div>
       {state === "error" && (
         <p role="alert" className="text-sm text-[#ffb4a9] sm:col-span-2">
