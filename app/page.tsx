@@ -5,26 +5,12 @@ import { CarRow } from "@/components/car";
 import { ArrowIcon, CarIcon, DocIcon, KeyIcon, PhoneIcon, PinIcon, ShipIcon, TelegramIcon } from "@/components/icons";
 import { faq, site, stages, telegramUrl } from "@/config/site";
 import { getCars } from "@/lib/cars";
-import { blockers } from "@/lib/catalog";
-import { calcPrice } from "@/lib/pricing";
-
-const stories = [
-  { car: "Kia K5, 2023", city: "Краснодар", days: 29 },
-  { car: "Hyundai Avante, 2024", city: "Ростов-на-Дону", days: 31 },
-  { car: "Changan UNI-K, 2022", city: "Краснодар", days: 24 },
-];
 
 const h2 = "display text-[clamp(2rem,7vw,3.5rem)]";
 
 export default async function Home() {
   const cars = await getCars();
-  const budgetItems = cars.map((c) => ({
-    id: c.id,
-    title: `${c.make} ${c.model}`,
-    year: c.year,
-    total: calcPrice(c).total,
-    blocked: blockers(c).length > 0,
-  }));
+  const budgetItems = cars.map((c) => ({ id: c.id, title: `${c.make} ${c.model}`, year: c.year, total: c.price }));
 
   return (
     <main className="relative">
@@ -120,27 +106,6 @@ export default async function Home() {
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
           <h2 className={`${h2} mb-10`}>Что вы получите за&nbsp;свой бюджет</h2>
           <BudgetPicker items={budgetItems} />
-        </div>
-      </section>
-
-      {/* Истории */}
-      <section className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
-        <h2 className={h2}>Выдачи клиентам</h2>
-        <p className="mt-4 text-sm text-ink-2">Заглушка: здесь будут реальные фото выдачи и подписи клиентов.</p>
-        <div className="mt-10 grid gap-4 md:grid-cols-2 md:grid-rows-2">
-          {stories.map((s, i) => (
-            <figure key={s.car} className={i === 0 ? "md:row-span-2" : ""}>
-              <div
-                className={`ticks grid place-items-center rounded-sm ${i === 0 ? "aspect-[4/3] md:aspect-auto md:h-[calc(100%-3.5rem)]" : "aspect-[16/7]"}`}
-              >
-                <KeyIcon className="size-10 text-ink/25" />
-              </div>
-              <figcaption className="mt-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <span className="font-semibold">{s.car} · {s.city}</span>
-                <span className="num text-sm text-ink-2">{s.days} дней до ключей · пример</span>
-              </figcaption>
-            </figure>
-          ))}
         </div>
       </section>
 

@@ -10,77 +10,87 @@ export async function tg(method: string, params: object) {
   return res.json();
 }
 
-export const template = `Марка: Kia
-Модель: K5
-Комплектация: 2.0 Prestige
-Выпуск: 03.2022
-Пробег: 45 000
-Объём: 1999
-Мощность: 160
-Топливо: бензин
-Коробка: автомат
-Цена: 21 500 000 вон`;
+// Число из текста: «2 450 000 ₽», «2,45 млн», «45000 км», «1.6»
+export function num(text: string) {
+  const n = Number(text.replace(/\s/g, "").replace(",", ".").match(/\d+(\.\d+)?/)?.[0] ?? NaN);
+  return n * (/млн/i.test(text) ? 1e6 : /тыс/i.test(text) ? 1e3 : 1);
+}
 
-export type CarFields = Omit<Car, "id" | "photos">;
+const inRange = (n: number, min: number, max: number) => (n >= min && n <= max ? String(Math.round(n)) : null);
+const short = (s: string) => (s && s.length <= 60 ? s : null);
+const thisYear = new Date().getFullYear();
 
-// Разбирает описание по шаблону «Поле: значение». Комплектация необязательна.
-export function parseCar(text: string): { car?: CarFields; errors: string[] } {
-  const f: Record<string, string> = {};
-  for (const line of text.split("\n")) {
-    const i = line.indexOf(":");
-    if (i > 0) f[line.slice(0, i).trim().toLowerCase().replace("ё", "е")] = line.slice(i + 1).trim();
-  }
-  const errors: string[] = [];
-  const need = (key: string, label: string) => {
-    if (!f[key]) errors.push(`нет поля «${label}»`);
-    return f[key] ?? "";
-  };
-  const num = (s: string) => Number(s.replace(/\s/g, "").replace(",", ".").match(/\d+(\.\d+)?/)?.[0] ?? NaN);
+export type Field = Exclude<keyof Car, "id" | "photos">;
+export type Draft = Partial<Record<Field | "step", string>>;
+type Step = {
+  key: Field;
+  ask: string;
+  options?: (d: Draft) => string[];
+  parse?: (text: string) => string | null; // разбор введённого текста и вариантов кнопок; null — ошибка
+  skip?: (d: Draft) => boolean;
+  optional?: boolean;
+};
 
-  const make = need("марка", "Марка");
-  const model = need("модель", "Модель");
-  const fuel = need("топливо", "Топливо").toLowerCase();
-  const transmission = need("коробка", "Коробка").toLowerCase();
+const makes: Record<string, string[]> = {
+  Корея: ["Kia", "Hyundai", "Genesis", "KGM", "Renault", "Chevrolet"],
+  Китай: ["Geely", "Chery", "Haval", "Changan", "Exeed", "Omoda", "Tank", "Jetour", "BYD", "Zeekr", "Li Auto", "Hongqi"],
+};
 
-  const release = need("выпуск", "Выпуск");
-  const [, m, y] = release.match(/^(\d{1,2})\D+(\d{4})$/) ?? [];
-  const month = Number(m);
-  const year = Number(y);
-  if (release && !(month >= 1 && month <= 12 && year >= 1990 && year <= 2100)) errors.push("Выпуск: месяц и год, например 03.2022");
-
-  const mileage = num(need("пробег", "Пробег"));
-  if (f["пробег"] && !(mileage >= 0)) errors.push("Пробег: число в км");
-
-  const volume = num(need("объем", "Объём"));
-  const cc = Math.round(volume < 20 ? volume * 1000 : volume); // 2.0 л или 1999 см³
-  if (f["объем"] && !(cc >= 500 && cc <= 10_000)) errors.push("Объём: в см³ (1999) или литрах (2.0)");
-
-  const hp = num(need("мощность", "Мощность"));
-  if (f["мощность"] && !(hp >= 30 && hp <= 1500)) errors.push("Мощность: число л. с.");
-
-  const priceText = need("цена", "Цена");
-  const currency = /krw|вон|₩/i.test(priceText) ? "KRW" : /cny|юан|¥/i.test(priceText) ? "CNY" : "";
-  const price = Math.round(num(priceText) * (/млн/i.test(priceText) ? 1e6 : /тыс/i.test(priceText) ? 1e3 : 1));
-  if (priceText && !currency) errors.push("Цена: укажите валюту — вон или юань");
-  if (priceText && !(price > 0)) errors.push("Цена: число, например 21 500 000 вон");
-
-  if (errors.length) return { errors };
-  return {
-    errors,
-    car: {
-      country: currency === "KRW" ? "KR" : "CN",
-      make,
-      model,
-      grade: f["комплектация"] ?? "",
-      year,
-      month,
-      mileage,
-      cc,
-      hp,
-      fuel,
-      transmission,
-      price,
-      currency,
+// Шаги добавления авто. Кнопки — для готовых вариантов, текст — для остального.
+export const steps: Step[] = [
+  { key: "country", ask: "Откуда авто?", options: () => ["Корея", "Китай"] },
+  { key: "make", ask: "Марка? Выберите или напишите.", options: (d) => makes[d.country ?? "Корея"], parse: short },
+  { key: "model", ask: "Модель? Напишите, например: K5", parse: short },
+  {
+    key: "year",
+    ask: "Год выпуска? Выберите или напишите.",
+    options: () => Array.from({ length: 8 }, (_, i) => String(thisYear - 7 + i)),
+    parse: (t) => inRange(num(t), 1990, thisYear + 1),
+  },
+  { key: "mileage", ask: "Пробег, км? Напишите число.", parse: (t) => inRange(num(t), 0, 1_000_000) },
+  { key: "fuel", ask: "Топливо?", options: () => ["Бензин", "Дизель", "Гибрид", "Электро"] },
+  {
+    key: "cc",
+    ask: "Объём двигателя, л? Выберите или напишите.",
+    options: () => ["1.0", "1.2", "1.4", "1.5", "1.6", "2.0", "2.2", "2.4", "2.5", "3.0", "3.5"],
+    parse: (t) => {
+      const v = num(t);
+      return inRange(v < 20 ? v * 1000 : v, 500, 10_000); // литры или см³
     },
+    skip: (d) => d.fuel === "Электро",
+  },
+  { key: "hp", ask: "Мощность, л. с.? Напишите число.", parse: (t) => inRange(num(t), 30, 2000) },
+  { key: "transmission", ask: "Коробка?", options: () => ["Автомат", "Робот", "Вариатор", "Механика"] },
+  { key: "drive", ask: "Привод?", options: () => ["Передний", "Задний", "Полный"] },
+  { key: "grade", ask: "Комплектация? Напишите или пропустите.", parse: short, optional: true },
+  {
+    key: "price",
+    ask: "Цена для клиента под ключ, ₽? Это число покажется на сайте. Например: 2 450 000",
+    parse: (t) => inRange(num(t), 10_000, 1_000_000_000),
+  },
+];
+
+// Следующий шаг после key (или первый), с учётом пропусков
+export function nextStep(d: Draft, key?: string) {
+  const from = key ? steps.findIndex((s) => s.key === key) + 1 : 0;
+  return steps.slice(from).find((s) => !s.skip?.(d));
+}
+
+export function toCar(d: Draft, id: string, photos: string[]): Car {
+  return {
+    id,
+    country: d.country === "Китай" ? "CN" : "KR",
+    make: d.make ?? "",
+    model: d.model ?? "",
+    grade: d.grade ?? "",
+    year: Number(d.year),
+    mileage: Number(d.mileage),
+    cc: Number(d.cc ?? 0),
+    hp: Number(d.hp),
+    fuel: d.fuel ?? "",
+    transmission: d.transmission ?? "",
+    drive: d.drive ?? "",
+    price: Number(d.price),
+    photos,
   };
 }

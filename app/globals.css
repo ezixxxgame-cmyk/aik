@@ -101,19 +101,6 @@ textarea {
   text-wrap: balance;
 }
 
-/* Чертёжная рамка: уголки вместо полной обводки */
-.ticks {
-  background:
-    linear-gradient(var(--ink-2), var(--ink-2)) top left / 10px 1px no-repeat,
-    linear-gradient(var(--ink-2), var(--ink-2)) top left / 1px 10px no-repeat,
-    linear-gradient(var(--ink-2), var(--ink-2)) top right / 10px 1px no-repeat,
-    linear-gradient(var(--ink-2), var(--ink-2)) top right / 1px 10px no-repeat,
-    linear-gradient(var(--ink-2), var(--ink-2)) bottom left / 10px 1px no-repeat,
-    linear-gradient(var(--ink-2), var(--ink-2)) bottom left / 1px 10px no-repeat,
-    linear-gradient(var(--ink-2), var(--ink-2)) bottom right / 10px 1px no-repeat,
-    linear-gradient(var(--ink-2), var(--ink-2)) bottom right / 1px 10px no-repeat,
-    var(--ground-2);
-}
 
 details > summary {
   list-style: none;

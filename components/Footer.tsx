@@ -6,7 +6,7 @@ export default function Footer() {
     <footer className="border-t border-line">
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 text-sm text-ink-2 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <p>
-          © 2026 {site.name} {site.fullName}. Демо-версия: курсы и ставки в расчёте цены тестовые.
+          © 2026 {site.name} {site.fullName}
         </p>
         <div className="flex flex-wrap gap-x-5 gap-y-2">
           <Link href="/privacy" className="underline">

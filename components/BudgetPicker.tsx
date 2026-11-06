@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
-type Item = { id: string; title: string; year: number; total: number; blocked: boolean };
+type Item = { id: string; title: string; year: number; total: number };
 
 const fmt = (n: number) => new Intl.NumberFormat("ru-RU").format(n);
 const presets = [2_500_000, 3_500_000, 5_000_000];
@@ -55,9 +55,7 @@ export default function BudgetPicker({ items }: { items: Item[] }) {
                 className="flex items-baseline justify-between gap-4 border-t border-line py-3 hover:underline"
               >
                 <span className="min-w-0 truncate">
-                  {i.title} <span className="num text-ink-2">{i.year}</span>
-                  {i.blocked && <span className="ml-2 text-xs text-danger">непроходной</span>}
-                </span>
+                  {i.title} <span className="num text-ink-2">{i.year}</span>                </span>
                 <span className="num shrink-0 font-semibold">от {fmt(Math.round(i.total))} ₽</span>
               </Link>
             </li>
