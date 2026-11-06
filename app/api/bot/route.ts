@@ -1,13 +1,14 @@
 import { revalidateTag } from "next/cache";
 import { nextStep, steps, tg, toCar, type Draft, type Field } from "@/lib/bot";
 import { redis } from "@/lib/cars";
-import { rub, type Car } from "@/lib/catalog";
+import { rub, type Car, type Story } from "@/lib/catalog";
 
 // Webhook Telegram-бота: владелец добавляет авто кнопками, авто сразу появляется в подборке на главной.
+// Истории клиентов: фото + текст, появляются в секции «Истории клиентов».
 // Telegram подписывает запросы секретом из setWebhook; писать боту могут только TELEGRAM_OWNER_IDS.
 
 type PhotoSize = { file_id: string; width: number; height: number };
-type Message = { message_id: number; chat: { id: number }; from?: { id: number }; text?: string; photo?: PhotoSize[] };
+type Message = { message_id: number; chat: { id: number }; from?: { id: number }; text?: string; caption?: string; photo?: PhotoSize[] };
 type Update = {
   message?: Message;
   callback_query?: { id: string; from: { id: number }; data?: string; message?: Message };
@@ -20,9 +21,21 @@ const rowsOf = (buttons: Button[], size: number) =>
   Array.from({ length: Math.ceil(buttons.length / size) }, (_, i) => buttons.slice(i * size, (i + 1) * size));
 const cancel: Button = { text: "Отменить", callback_data: "cancel" };
 const photosDone: Button = { text: "Фото готовы", callback_data: "photos" };
-const menu = keyboard([[{ text: "Добавить авто", callback_data: "add" }], [{ text: "Авто на сайте", callback_data: "list" }]]);
+const addStory: Button = { text: "Добавить историю", callback_data: "sadd" };
+const menu = keyboard([
+  [{ text: "Добавить авто", callback_data: "add" }],
+  [{ text: "Авто на сайте", callback_data: "list" }],
+  [addStory],
+  [{ text: "Истории на сайте", callback_data: "slist" }],
+]);
 const manage = (c: Car) =>
   keyboard([[{ text: "Изменить цену", callback_data: `price:${c.id}` }], [{ text: "Снять с сайта", callback_data: `del:${c.id}` }]]);
+const STORY_MAX = 500; // знаков текста истории
+const manageStory = (s: Story) => keyboard([[{ text: "Удалить с сайта", callback_data: `sdel:${s.id}` }]]);
+const snippet = (t: string) => {
+  const s = t.replace(/\s+/g, " ");
+  return s.length > 40 ? `${s.slice(0, 40)}…` : s;
+};
 
 const title = (c: Car) => `${c.make} ${c.model} ${c.year}`;
 const summary = (c: Car) =>
@@ -68,6 +81,7 @@ async function handle({ message: msg, callback_query: cb }: Update, origin: stri
   const draftKey = `form:${chatId}`; // анкета нового авто (хеш)
   const photosKey = `form-photos:${chatId}`;
   const editKey = `price-edit:${chatId}`; // id авто, которому меняют цену
+  const storyKey = `story-form:${chatId}`; // новая история: "wait" — ждём фото, иначе file_id фото и ждём текст
 
   const getDraft = async () => {
     const flat = await redis<string[]>("HGETALL", draftKey);
@@ -79,7 +93,20 @@ async function handle({ message: msg, callback_query: cb }: Update, origin: stri
     await redis("HSET", draftKey, ...Object.entries(fields).flatMap(([k, v]) => [k, v ?? ""]));
     await redis("EXPIRE", draftKey, DAY);
   };
-  const clearDraft = () => redis("DEL", draftKey, photosKey, editKey);
+  const clearDraft = () => redis("DEL", draftKey, photosKey, editKey, storyKey);
+
+  // Публикация истории. Слишком длинный текст не берём: фото остаётся, просим сократить
+  const publishStory = async (photo: string, text: string) => {
+    if (text.length > STORY_MAX) {
+      await redis("SET", storyKey, photo, "EX", DAY);
+      return send(`Текст длинный: ${text.length} знаков, максимум ${STORY_MAX}. Сократите и пришлите ещё раз.`, keyboard([[cancel]]));
+    }
+    const story: Story = { id: Date.now().toString(36), photo, text };
+    await redis("HSET", "stories", story.id, JSON.stringify(story));
+    await redis("DEL", storyKey);
+    revalidateTag("stories", { expire: 0 });
+    return send(`История опубликована:\n${text}\n${origin}/#stories`, manageStory(story));
+  };
 
   // Вопрос следующего шага или итог с кнопкой «Опубликовать»
   const askNext = async (d: Draft, after?: string) => {
@@ -157,6 +184,25 @@ async function handle({ message: msg, callback_query: cb }: Update, origin: stri
       const cars = (await redis<string[]>("HVALS", "cars")).map((s) => JSON.parse(s) as Car);
       const rows = cars.map((c) => [{ text: `${title(c)} — ${rub(c.price)}`, callback_data: `car:${c.id}` }]);
       await send(cars.length ? "Авто на сайте:" : "На сайте пока нет авто.", keyboard([...rows, [{ text: "Добавить авто", callback_data: "add" }]]));
+    } else if (action === "sadd") {
+      await clearDraft();
+      await redis("SET", storyKey, "wait", "EX", DAY);
+      await send("Пришлите одно фото для истории. Можно сразу с подписью — она станет текстом.", keyboard([[cancel]]));
+    } else if (action === "slist") {
+      const stories = (await redis<string[]>("HVALS", "stories")).map((s) => JSON.parse(s) as Story);
+      const rows = stories.map((s) => [{ text: snippet(s.text), callback_data: `story:${s.id}` }]);
+      await send(stories.length ? "Истории на сайте:" : "На сайте пока нет историй.", keyboard([...rows, [addStory]]));
+    } else if (action === "story" || action === "sdel") {
+      const saved = await redis<string | null>("HGET", "stories", arg ?? "");
+      const story: Story | null = saved && JSON.parse(saved);
+      if (!story) note = "Эта история уже удалена";
+      else if (action === "story") await send(story.text, manageStory(story));
+      else {
+        await redis("HDEL", "stories", story.id);
+        revalidateTag("stories", { expire: 0 });
+        await edit(`Удалено с сайта: ${snippet(story.text)}`);
+        note = "Удалено";
+      }
     } else {
       // Действия с опубликованным авто: car / price / del
       const saved = await redis<string | null>("HGET", "cars", arg ?? "");
@@ -179,10 +225,16 @@ async function handle({ message: msg, callback_query: cb }: Update, origin: stri
   if (!msg) return;
 
   if (msg.photo) {
-    const d = await getDraft();
-    if (!d.step) await save({ step: "photos" });
     // Telegram присылает несколько размеров; берём самый крупный до 1280 px
     const photo = msg.photo.findLast((p) => Math.max(p.width, p.height) <= 1280) ?? msg.photo[0];
+    if (await redis<string | null>("GET", storyKey)) {
+      const caption = msg.caption?.trim();
+      if (caption) return publishStory(photo.file_id, caption);
+      await redis("SET", storyKey, photo.file_id, "EX", DAY);
+      return send("Фото есть. Теперь напишите текст истории — пару предложений.", keyboard([[cancel]]));
+    }
+    const d = await getDraft();
+    if (!d.step) await save({ step: "photos" });
     const count = await redis<number>("RPUSH", photosKey, photo.file_id);
     await redis("EXPIRE", photosKey, DAY);
     if (count === 1) await send("Фото получены. Когда загрузятся все, нажмите «Фото готовы».", keyboard([[photosDone], [cancel]]));
@@ -204,6 +256,10 @@ async function handle({ message: msg, callback_query: cb }: Update, origin: stri
     revalidateTag("cars", { expire: 0 });
     return send(`Цена обновлена: ${title(car)} — ${rub(car.price)}`);
   }
+
+  const story = await redis<string | null>("GET", storyKey);
+  if (story === "wait") return send("Сначала пришлите фото.", keyboard([[cancel]]));
+  if (story) return text ? publishStory(story, text) : send("Напишите текст истории.", keyboard([[cancel]]));
 
   const d = await getDraft();
   if (d.step === "photos") return send("Пришлите фото или нажмите «Фото готовы».", keyboard([[photosDone], [cancel]]));

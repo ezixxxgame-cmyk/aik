@@ -1,5 +1,5 @@
 import { cacheLife, cacheTag } from "next/cache";
-import type { Car } from "@/lib/catalog";
+import type { Car, Story } from "@/lib/catalog";
 
 // Подборка хранится в Upstash Redis: хеш "cars" (id → JSON авто). Пишет бот, читает сайт.
 // Переменные создаёт интеграция Upstash в Vercel (KV_*) или берутся из консоли Upstash (UPSTASH_*).
@@ -18,14 +18,26 @@ export async function redis<T>(...command: (string | number)[]): Promise<T> {
   return data.result;
 }
 
-// Новые сверху: id — время добавления в base36
+// Записи хеша, новые сверху: id — время добавления в base36
+const newest = async <T extends { id: string }>(key: string): Promise<T[]> => {
+  if (!url) return [];
+  const list = await redis<string[]>("HVALS", key);
+  return list.map((s) => JSON.parse(s) as T).sort((a, b) => parseInt(b.id, 36) - parseInt(a.id, 36));
+};
+
 export async function getCars(): Promise<Car[]> {
   "use cache";
   cacheTag("cars");
   cacheLife("max");
-  if (!url) return [];
-  const list = await redis<string[]>("HVALS", "cars");
-  return list.map((s) => JSON.parse(s) as Car).sort((a, b) => parseInt(b.id, 36) - parseInt(a.id, 36));
+  return newest<Car>("cars");
+}
+
+// Истории клиентов: хеш "stories" (id → JSON), тоже пишет бот
+export async function getStories(): Promise<Story[]> {
+  "use cache";
+  cacheTag("stories");
+  cacheLife("max");
+  return newest<Story>("stories");
 }
 
 export const getCar = async (id: string) => (await getCars()).find((c) => c.id === id);

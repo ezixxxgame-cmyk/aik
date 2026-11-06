@@ -16,6 +16,9 @@ export type Car = {
   photos: string[]; // file_id фото в Telegram
 };
 
+// История клиента: одно фото (file_id в Telegram) и короткий текст. Добавляет владелец через бота.
+export type Story = { id: string; photo: string; text: string };
+
 export const countryName = { KR: "Корея", CN: "Китай" } as const;
 
 export const photoUrl = (fileId: string) => `/api/photo/${fileId}`;

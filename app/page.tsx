@@ -1,14 +1,15 @@
 import RouteLine from "@/components/RouteLine";
 import LeadForm from "@/components/LeadForm";
+import Stories from "@/components/Stories";
 import { CarRow } from "@/components/car";
 import { ArrowIcon, CarIcon, DocIcon, KeyIcon, PhoneIcon, PinIcon, ShipIcon, TelegramIcon } from "@/components/icons";
 import { faq, site, stages, telegramUrl } from "@/config/site";
-import { getCars } from "@/lib/cars";
+import { getCars, getStories } from "@/lib/cars";
 
 const h2 = "display text-[clamp(2rem,7vw,3.5rem)]";
 
 export default async function Home() {
-  const cars = await getCars();
+  const [cars, stories] = await Promise.all([getCars(), getStories()]);
 
   return (
     <main className="relative">
@@ -98,6 +99,8 @@ export default async function Home() {
           </p>
         )}
       </section>
+
+      <Stories stories={stories} />
 
       {/* Заявка */}
       <section id="lead" className="relative z-10 scroll-mt-16 bg-band text-on-band">
