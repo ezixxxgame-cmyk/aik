@@ -147,6 +147,36 @@ details[open] .faq-plus {
   stroke-dasharray: 2 6;
   stroke-linecap: round;
 }
+.map-road-edge,
+.map-road {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.map-road-edge {
+  stroke: var(--ink);
+  stroke-opacity: 0.32;
+  stroke-width: 9;
+}
+.map-road {
+  stroke: var(--ground-2);
+  stroke-width: 7;
+}
+.map-lane {
+  fill: none;
+  stroke: var(--ink);
+  stroke-opacity: 0.45;
+  stroke-width: 1;
+  stroke-dasharray: 4 5;
+}
+@media (orientation: portrait) {
+  .map-road-edge {
+    stroke-width: 7;
+  }
+  .map-road {
+    stroke-width: 5;
+  }
+}
 .map-done {
   fill: none;
   stroke: var(--route-done);

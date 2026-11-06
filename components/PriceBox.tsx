@@ -59,7 +59,7 @@ export default function PriceBox({ car }: { car: Car }) {
       <div className="mt-5 grid gap-2">
         <Link
           href="/#lead"
-          className="inline-flex h-14 items-center justify-center rounded-md bg-key px-6 text-base font-semibold text-on-key transition-colors hover:bg-key-hover"
+          className="inline-flex h-14 items-center justify-center rounded-[10px] bg-key px-6 text-base font-semibold text-on-key transition-colors hover:bg-key-hover"
         >
           Оставить заявку
         </Link>
@@ -67,7 +67,7 @@ export default function PriceBox({ car }: { car: Car }) {
           href={telegramUrl(message)}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-md border border-ink/25 px-6 font-medium hover:border-ink"
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-[10px] border border-ink/25 px-6 font-medium hover:border-ink"
         >
           <TelegramIcon /> Отправить в Telegram
         </a>

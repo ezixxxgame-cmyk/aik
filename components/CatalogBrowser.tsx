@@ -81,7 +81,7 @@ export default function CatalogBrowser() {
         <button
           type="button"
           onClick={reset}
-          className="col-span-2 h-12 cursor-pointer rounded-md px-4 text-sm font-medium underline decoration-ink/30 hover:decoration-ink md:col-span-1"
+          className="col-span-2 h-12 cursor-pointer rounded-[10px] px-4 text-sm font-medium underline decoration-ink/30 hover:decoration-ink md:col-span-1"
         >
           Сбросить
         </button>

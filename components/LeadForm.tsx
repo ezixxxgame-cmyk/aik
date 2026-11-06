@@ -79,7 +79,7 @@ export default function LeadForm() {
         <button
           type="submit"
           disabled={state === "sending"}
-          className="h-14 cursor-pointer rounded-md bg-key px-8 text-base font-semibold text-on-key transition-colors hover:bg-key-hover disabled:cursor-wait disabled:opacity-70"
+          className="h-14 shrink-0 cursor-pointer rounded-[10px] bg-key px-8 text-base font-semibold text-on-key transition-colors hover:bg-key-hover disabled:cursor-wait disabled:opacity-70"
         >
           {state === "sending" ? "Отправляем…" : "Отправить заявку"}
         </button>

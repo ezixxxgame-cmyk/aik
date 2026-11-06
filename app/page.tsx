@@ -5,12 +5,9 @@ import LeadForm from "@/components/LeadForm";
 import { CarRow } from "@/components/car";
 import { ArrowIcon, CarIcon, DocIcon, KeyIcon, PhoneIcon, PinIcon, ShipIcon, TelegramIcon } from "@/components/icons";
 import { faq, site, stages, telegramUrl } from "@/config/site";
-import { pricing } from "@/config/pricing";
-import { blockers, cars, getCar, rub } from "@/lib/catalog";
+import { blockers, cars } from "@/lib/catalog";
 import { calcPrice } from "@/lib/pricing";
 
-const sample = getCar("kr-101342")!;
-const sampleCalc = calcPrice(sample);
 const featured = [...cars].sort((a, b) => blockers(a).length - blockers(b).length).slice(0, 6);
 const budgetItems = cars.map((c) => ({
   id: c.id,
@@ -34,8 +31,8 @@ export default function Home() {
       <RouteLine />
 
       {/* Первый экран */}
-      <section className="relative z-10 mx-auto grid max-w-6xl gap-10 px-4 pt-10 pb-16 sm:px-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-end md:pt-16 md:pb-24">
-        <div>
+      <section className="relative z-10 mx-auto max-w-6xl px-4 pt-10 pb-16 sm:px-6 md:pt-16 md:pb-24">
+        <div className="max-w-3xl">
           <h1 className="display text-[clamp(2.6rem,11vw,4.75rem)]">
             Авто из&nbsp;Кореи и&nbsp;Китая под&nbsp;ключ за&nbsp;<span className="num whitespace-nowrap">~{site.termDays}&nbsp;дней</span>
           </h1>
@@ -45,7 +42,7 @@ export default function Home() {
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <a
               href="#lead"
-              className="inline-flex h-14 items-center justify-center gap-3 rounded-md bg-key px-8 text-lg font-semibold text-on-key shadow-[0_6px_18px_-8px_rgb(47_59_92/0.45)] transition-colors hover:bg-key-hover"
+              className="inline-flex h-14 items-center justify-center gap-3 rounded-[10px] bg-key px-8 text-lg font-semibold text-on-key shadow-[0_6px_18px_-8px_rgb(47_59_92/0.45)] transition-colors hover:bg-key-hover"
             >
               Подобрать авто <ArrowIcon />
             </a>
@@ -53,7 +50,7 @@ export default function Home() {
               href={telegramUrl()}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex h-14 items-center justify-center gap-2 rounded-md px-5 font-medium underline decoration-ink/30 hover:decoration-ink"
+              className="inline-flex h-14 items-center justify-center gap-2 rounded-[10px] px-5 font-medium underline decoration-ink/30 hover:decoration-ink"
             >
               <TelegramIcon /> Написать в Telegram
             </a>
@@ -71,30 +68,6 @@ export default function Home() {
             </ol>
           </div>
         </div>
-
-        {/* Доказательство: расчёт реального лота из каталога */}
-        <aside aria-label="Пример расчёта" className="md:max-w-lg rounded-lg bg-paper p-5 shadow-[0_18px_40px_-24px_rgb(47_59_92/0.55)] sm:p-6">
-          <div className="flex items-baseline justify-between gap-4">
-            <p className="font-display text-lg font-semibold uppercase">{sample.make} {sample.model} · {sample.year}</p>
-            <span className="shrink-0 text-xs text-ink-2">пример</span>
-          </div>
-          <dl className="num mt-4 text-sm">
-            {sampleCalc.rows.map((r) => (
-              <div key={r.label} className="flex justify-between gap-4 border-t border-line py-2">
-                <dt className="text-ink-2">{r.label}</dt>
-                <dd className="shrink-0">{rub(r.value)}</dd>
-              </div>
-            ))}
-            <div className="flex items-baseline justify-between gap-4 border-t-2 border-ink pt-3">
-              <dt className="font-semibold">Под ключ в Краснодаре</dt>
-              <dd className="shrink-0 whitespace-nowrap font-display text-2xl font-semibold">{rub(sampleCalc.total)}</dd>
-            </div>
-          </dl>
-          <p className="mt-3 text-xs text-ink-2">
-            Ставки тестовые, курс на {new Date(pricing.asOf).toLocaleDateString("ru-RU")}.{" "}
-            <Link href={`/catalog/${sample.id}`} className="underline">Открыть авто</Link>
-          </p>
-        </aside>
       </section>
 
       {/* Этапы */}
@@ -134,7 +107,7 @@ export default function Home() {
         </div>
         <Link
           href="/catalog"
-          className="group mt-8 flex h-16 w-full items-center justify-between gap-4 rounded-md bg-ink px-6 text-ground shadow-[0_10px_24px_-14px_rgb(47_59_92/0.7)] transition-colors hover:bg-ink-2 sm:inline-flex sm:w-auto sm:min-w-[22rem]"
+          className="group mt-8 flex h-16 w-full items-center justify-between gap-4 rounded-[10px] bg-ink px-6 text-ground shadow-[0_10px_24px_-14px_rgb(47_59_92/0.7)] transition-colors hover:bg-ink-2 sm:inline-flex sm:w-auto sm:min-w-[22rem]"
         >
           <span className="font-display text-xl font-semibold uppercase tracking-wide">Открыть каталог</span>
           <span className="flex items-center gap-2 text-sm text-ground/70">
@@ -173,48 +146,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FAQ и документы */}
-      <section id="faq" className="relative z-10 mx-auto grid max-w-6xl scroll-mt-20 gap-12 px-4 py-16 sm:px-6 md:grid-cols-[minmax(0,7fr)_minmax(0,4fr)] md:py-24">
-        <div>
-          <h2 className={h2}>Частые вопросы</h2>
-          <div className="mt-8 border-b border-line">
-            {faq.map((f) => (
-              <details key={f.q} className="group border-t border-line">
-                <summary className="flex min-h-14 cursor-pointer items-center justify-between gap-4 py-4 text-lg font-semibold">
-                  {f.q}
-                  <span aria-hidden className="faq-plus text-2xl font-normal transition-transform">+</span>
-                </summary>
-                <p className="max-w-[60ch] pb-5 leading-relaxed text-ink-2">{f.a}</p>
-              </details>
-            ))}
-          </div>
-        </div>
-        <aside className="md:pt-3">
-          <h3 className="font-display text-2xl font-extrabold uppercase">Документы</h3>
-          <ul className="mt-5 grid gap-1 text-sm">
-            <li>
-              <a href="#" aria-disabled className="flex min-h-11 items-center gap-3 underline decoration-ink/30">
-                <DocIcon className="size-5 shrink-0" /> Образец договора (PDF, заглушка)
-              </a>
-            </li>
-            <li className="flex min-h-11 items-start gap-3 pt-2.5">
-              <DocIcon className="size-5 shrink-0" />
-              <span>
-                Реквизиты (заглушка)
-                <span className="num mt-1 block text-ink-2">ИНН XXXXXXXXXX · ОГРН XXXXXXXXXXXXX</span>
-              </span>
-            </li>
-          </ul>
-          <div className="ticks mt-6 grid aspect-[4/3] place-items-center rounded-sm">
-            <span className="flex flex-col items-center gap-2 text-center text-sm text-ink-2">
-              <PinIcon className="size-7 text-ink" />
-              Карта офиса — заглушка
-            </span>
-          </div>
-          <p className="mt-3 text-sm">{site.address}</p>
-        </aside>
-      </section>
-
       {/* Заявка */}
       <section id="lead" className="relative z-10 scroll-mt-16 bg-band text-on-band">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:py-24">
@@ -235,6 +166,49 @@ export default function Home() {
           <LeadForm />
         </div>
       </section>
+
+      {/* FAQ и документы */}
+      <section id="faq" className="relative z-10 mx-auto grid max-w-6xl scroll-mt-20 gap-10 px-4 py-12 sm:px-6 md:grid-cols-[minmax(0,7fr)_minmax(0,4fr)] md:py-16">
+        <div>
+          <h2 className="display text-[clamp(1.75rem,5vw,2.5rem)]">Частые вопросы</h2>
+          <div className="mt-5 border-b border-line">
+            {faq.map((f) => (
+              <details key={f.q} className="group border-t border-line">
+                <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-4 py-2.5 font-semibold">
+                  {f.q}
+                  <span aria-hidden className="faq-plus text-xl font-normal transition-transform">+</span>
+                </summary>
+                <p className="max-w-[60ch] pb-4 text-[0.95rem] leading-relaxed text-ink-2">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+        <aside className="md:pt-1.5">
+          <h3 className="font-display text-xl font-extrabold uppercase">Документы</h3>
+          <ul className="mt-3 grid text-sm">
+            <li>
+              <a href="#" aria-disabled className="flex min-h-11 items-center gap-3 underline decoration-ink/30">
+                <DocIcon className="size-5 shrink-0" /> Образец договора (PDF, заглушка)
+              </a>
+            </li>
+            <li className="flex min-h-11 items-start gap-3 pt-2.5">
+              <DocIcon className="size-5 shrink-0" />
+              <span>
+                Реквизиты (заглушка)
+                <span className="num mt-1 block text-ink-2">ИНН XXXXXXXXXX · ОГРН XXXXXXXXXXXXX</span>
+              </span>
+            </li>
+            <li className="flex min-h-11 items-start gap-3 pt-2.5">
+              <PinIcon className="size-5 shrink-0" />
+              <span>
+                {site.address}
+                <span className="mt-1 block text-ink-2">Карта офиса — заглушка</span>
+              </span>
+            </li>
+          </ul>
+        </aside>
+      </section>
+
     </main>
   );
 }

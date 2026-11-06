@@ -34,20 +34,28 @@ const prep = (raw: Pt[]): Line => {
 };
 const lines = { kr: prep(route.kr), cn: prep(route.cn), trunk: prep(route.trunk) };
 
-// Точка на линии и пройденная часть пути для доли t
-const walk = ({ pts, cum, total }: Line, t: number) => {
-  const l = Math.min(Math.max(t, 0), 1) * total;
+// Точка на линии на расстоянии l от начала
+const at = ({ pts, cum, total }: Line, l: number) => {
+  l = Math.min(Math.max(l, 0), total);
   let i = 1;
   while (i < pts.length - 1 && cum[i] < l) i++;
   const k = (l - cum[i - 1]) / (cum[i] - cum[i - 1] || 1);
   const p: Pt = [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * k, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * k];
-  const d = "M" + [...pts.slice(0, i), p].map((q) => q.join(" ")).join("L");
-  return { p, d };
+  return { p, i };
+};
+
+// Для доли t: точка, пройденная часть пути и курс (градусы в координатах карты, по хорде ±4 ед. — без дрожи)
+const walk = (line: Line, t: number) => {
+  const l = Math.min(Math.max(t, 0), 1) * line.total;
+  const { p, i } = at(line, l);
+  const d = "M" + [...line.pts.slice(0, i), p].map((q) => q.join(" ")).join("L");
+  const [a, b] = [at(line, l - 4).p, at(line, l + 4).p];
+  return { p, d, ang: (Math.atan2(b[1] - a[1], b[0] - a[0]) * 180) / Math.PI };
 };
 
 const poly = (pts: Pt[]) => "M" + pts.map((q) => q.join(" ")).join("L");
 
-// Иконки нарисованы носом вправо; если линия в целом идёт влево по экрану — отражаем
+// Корабль не поворачиваем: если морская линия в целом идёт влево по экрану — отражаем
 const facesLeft = ({ pts }: Line, rot: number) => {
   const [a, b] = [pts[0], pts[pts.length - 1]];
   return (rot ? b[1] - a[1] : b[0] - a[0]) < 0;
@@ -88,6 +96,7 @@ export default function RouteLine() {
     const reduce = matchMedia("(prefers-reduced-motion: reduce)");
     let raf = 0;
     let cur = -1;
+    const flipped: Record<string, boolean> = {};
 
     const target = () => {
       const lead = document.getElementById("lead");
@@ -115,9 +124,23 @@ export default function RouteLine() {
         g.setAttribute("transform", `translate(${at[0]} ${at[1]}) rotate(${rot}) scale(${1 / s})`);
         g.classList.toggle("off", !on);
       };
+      // Машина и автовоз поворачиваются по курсу дороги и чуть покачиваются на неровностях.
+      // Иконки нарисованы носом вправо: при движении влево отражаем (с гистерезисом, чтобы не мигали на вертикали).
+      const drive = (key: string, w: ReturnType<typeof walk>, on: boolean, traveled: number) => {
+        const g = icons.current[key];
+        if (!g) return;
+        let a = ((w.ang - rot + 540) % 360) - 180;
+        const f = Math.abs(a) > (flipped[key] ? 80 : 100);
+        flipped[key] = f;
+        if (f) a += a > 0 ? -180 : 180;
+        const bump = reduce.matches ? 0 : -Math.abs(Math.sin(traveled * s * 0.45)) * 1.1;
+        g.setAttribute("transform", `translate(${w.p[0]} ${w.p[1]}) rotate(${rot + a}) scale(${1 / s}) translate(0 ${bump})`);
+        (g.firstElementChild as SVGGElement).style.scale = f ? "-1 1" : "";
+        g.classList.toggle("off", !on);
+      };
       put("kr", kr.p, !onTrunk);
-      put("cn", cn.p, !onTrunk);
-      put("truck", tk.p, onTrunk && !finished);
+      drive("cn", cn, !onTrunk, (p / BRANCH) * lines.cn.total);
+      drive("truck", tk, onTrunk && !finished, ((p - BRANCH) / (1 - BRANCH)) * lines.trunk.total);
       put("key", tk.p, finished);
 
       const lit: Record<string, boolean> = {
@@ -163,9 +186,13 @@ export default function RouteLine() {
         <g transform={`translate(${tx} ${ty}) rotate(${-rot}) scale(${s})`}>
           <path d={land} className="map-land" vectorEffect="non-scaling-stroke" />
           <path d={russia} className="map-russia" vectorEffect="non-scaling-stroke" />
+          {/* Дорога по суше: сначала все обочины, потом полотно, чтобы ветки сливались без швов */}
+          {(["map-road-edge", "map-road"] as const).map((cls) =>
+            (["cn", "trunk"] as const).map((k) => <path key={cls + k} d={poly(lines[k].pts)} className={cls} vectorEffect="non-scaling-stroke" />),
+          )}
           {(["kr", "cn", "trunk"] as const).map((k) => (
             <g key={k}>
-              <path d={poly(lines[k].pts)} className="map-route" vectorEffect="non-scaling-stroke" />
+              <path d={poly(lines[k].pts)} className={k === "kr" ? "map-route" : "map-lane"} vectorEffect="non-scaling-stroke" />
               <path ref={(el) => void (done.current[k] = el)} className="map-done" vectorEffect="non-scaling-stroke" />
             </g>
           ))}
@@ -186,11 +213,12 @@ export default function RouteLine() {
           <Marker refFn={(el) => void (icons.current.kr = el)} flip={facesLeft(lines.kr, rot)}>
             <ShipIcon {...icon} fill="var(--ground)" />
           </Marker>
-          <Marker refFn={(el) => void (icons.current.cn = el)} flip={facesLeft(lines.cn, rot)}>
-            <CarIcon {...icon} fill="var(--ground)" />
+          {/* Колёса стоят на осевой дороги: точка поворота — пятно контакта */}
+          <Marker refFn={(el) => void (icons.current.cn = el)}>
+            <CarIcon {...icon} y={-24} fill="var(--ground)" />
           </Marker>
-          <Marker refFn={(el) => void (icons.current.truck = el)} flip={facesLeft(lines.trunk, rot)}>
-            <TruckIcon {...icon} fill="var(--ground)" />
+          <Marker refFn={(el) => void (icons.current.truck = el)}>
+            <TruckIcon {...icon} y={-26} fill="var(--ground)" />
           </Marker>
           <Marker refFn={(el) => void (icons.current.key = el)}>
             <KeyIcon {...icon} width={ICON + 6} height={ICON + 6} x={-(ICON + 6) / 2} y={-(ICON + 6) / 2} fill="var(--key)" className="map-key" />
