@@ -1,13 +1,27 @@
 import type { Car } from "@/lib/catalog";
 
-// Вызов Telegram Bot API. Токен — TELEGRAM_BOT_TOKEN.
-export async function tg(method: string, params: object) {
-  const res = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/${method}`, {
+// Вызов Telegram Bot API. По умолчанию — админ-бот (TELEGRAM_BOT_TOKEN).
+export async function tg(method: string, params: object, token = process.env.TELEGRAM_BOT_TOKEN) {
+  const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params),
   });
   return res.json();
+}
+
+// Список ID из env через запятую
+export const ids = (s = "") => s.split(",").map((x) => x.trim()).filter(Boolean);
+
+// Лог-бот (TELEGRAM_LOG_BOT_TOKEN) присылает действия в админ-боте в чаты TELEGRAM_LOG_CHAT_IDS, по умолчанию — владельцам.
+// Telegram доставит только в чаты, где лог-боту хоть раз написали.
+export const logChats = () => ids(process.env.TELEGRAM_LOG_CHAT_IDS || process.env.TELEGRAM_OWNER_IDS);
+
+export async function log(text: string) {
+  const token = process.env.TELEGRAM_LOG_BOT_TOKEN;
+  if (!token) return;
+  const params = { text, link_preview_options: { is_disabled: true } };
+  await Promise.all(logChats().map((chat_id) => tg("sendMessage", { chat_id, ...params }, token).catch(console.error)));
 }
 
 // Число из текста: «2 450 000 ₽», «2,45 млн», «45000 км», «1.6»

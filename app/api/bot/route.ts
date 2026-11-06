@@ -1,18 +1,25 @@
 import { revalidateTag } from "next/cache";
-import { nextStep, steps, tg, toCar, type Draft, type Field } from "@/lib/bot";
+import { after, connection } from "next/server";
+import { ids, log, nextStep, steps, tg, toCar, type Draft, type Field } from "@/lib/bot";
 import { redis } from "@/lib/cars";
 import { rub, type Car, type Story } from "@/lib/catalog";
+import { site } from "@/config/site";
 
 // Webhook Telegram-бота: владелец добавляет авто кнопками, авто сразу появляется в подборке на главной.
 // Истории клиентов: фото + текст, появляются в секции «Истории клиентов».
 // Telegram подписывает запросы секретом из setWebhook; писать боту могут только TELEGRAM_OWNER_IDS.
+// Действия и ошибки уходят в лог-бот (lib/bot.ts → log).
 
+type User = { id: number; first_name?: string; username?: string };
 type PhotoSize = { file_id: string; width: number; height: number };
-type Message = { message_id: number; chat: { id: number }; from?: { id: number }; text?: string; caption?: string; photo?: PhotoSize[] };
+type Message = { message_id: number; chat: { id: number }; from?: User; text?: string; caption?: string; photo?: PhotoSize[] };
 type Update = {
+  update_id?: number;
   message?: Message;
-  callback_query?: { id: string; from: { id: number }; data?: string; message?: Message };
+  callback_query?: { id: string; from: User; data?: string; message?: Message };
 };
+const who = (u?: User) =>
+  u ? [u.first_name, u.username && `@${u.username}`, `ID ${u.id}`].filter(Boolean).join(", ") : "неизвестно";
 type Button = { text: string; callback_data: string };
 
 const DAY = 86_400;
@@ -51,18 +58,53 @@ const summary = (c: Car) =>
     .filter(Boolean)
     .join("\n");
 
+// Регистрация вебхуков обоих ботов прямо с Vercel: после деплоя или смены токена/секрета открыть
+// https://aik-alpha.vercel.app/api/bot — покажет адрес, очередь и последнюю ошибку Telegram.
+// Ключ не нужен: адрес и секрет берутся из кода и env, повторный вызов ничего не ломает.
+export async function GET() {
+  await connection();
+  const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  if (!secret) return Response.json({ error: "Нет TELEGRAM_WEBHOOK_SECRET в env" }, { status: 500 });
+  const hooks = [
+    { bot: "admin", token: process.env.TELEGRAM_BOT_TOKEN, path: "/api/bot", updates: ["message", "callback_query"] },
+    { bot: "log", token: process.env.TELEGRAM_LOG_BOT_TOKEN, path: "/api/log-bot", updates: ["message"] },
+  ];
+  const status = await Promise.all(
+    hooks.map(async ({ bot, token, path, updates }) => {
+      if (!token) return { bot, error: "Нет токена в env" };
+      // max_connections 1: апдейты идут по очереди, шаги анкеты не перепутаются
+      const params = { url: site.url + path, secret_token: secret, allowed_updates: updates, max_connections: 1 };
+      const set = await tg("setWebhook", params, token);
+      const { result: info } = await tg("getWebhookInfo", {}, token);
+      return {
+        bot,
+        setWebhook: set.description,
+        url: info?.url,
+        pending: info?.pending_update_count,
+        lastError: info?.last_error_message,
+        lastErrorAt: info?.last_error_date && new Date(info.last_error_date * 1000).toISOString(),
+      };
+    }),
+  );
+  return Response.json(status);
+}
+
 export async function POST(req: Request) {
   if (req.headers.get("x-telegram-bot-api-secret-token") !== process.env.TELEGRAM_WEBHOOK_SECRET) {
     return new Response(null, { status: 401 });
   }
-  const update: Update = await req.json();
+  let update: Update = {};
   try {
-    await handle(update, new URL(req.url).origin);
+    update = await req.json();
+    // Telegram шлёт апдейт повторно, если не дождался ответа; второй раз не обрабатываем
+    const fresh = await redis<string | null>("SET", `tg-update:${update.update_id}`, 1, "NX", "EX", DAY);
+    if (fresh) await handle(update, new URL(req.url).origin);
   } catch (e) {
     console.error(e);
     const chatId = update.message?.chat.id ?? update.callback_query?.message?.chat.id;
     const text = `Ошибка: ${e instanceof Error ? e.message : e}`;
     if (chatId) await tg("sendMessage", { chat_id: chatId, text }).catch(console.error);
+    after(() => log(`${text}\nКто: ${who(update.message?.from ?? update.callback_query?.from)}`));
   }
   // Всегда 200: иначе Telegram повторяет запрос и задерживает следующие сообщения
   return new Response();
@@ -70,13 +112,18 @@ export async function POST(req: Request) {
 
 async function handle({ message: msg, callback_query: cb }: Update, origin: string) {
   const chatId = msg?.chat.id ?? cb?.message?.chat.id;
-  const userId = (msg ?? cb)?.from?.id;
+  const from = (msg ?? cb)?.from;
+  const userId = from?.id;
   if (!chatId || !userId) return;
 
   const send = (text: string, extra: object = {}) =>
     tg("sendMessage", { chat_id: chatId, text, ...extra }).catch(console.error);
-  const owners = (process.env.TELEGRAM_OWNER_IDS ?? "").split(",").map((s) => s.trim());
-  if (!owners.includes(String(userId))) return send(`Бот только для владельца сайта. Ваш ID: ${userId}`);
+  // Запись в лог-бот уходит после ответа Telegram и не тормозит админ-бота
+  const act = (text: string) => after(() => log(`${text}\nКто: ${who(from)}`));
+  if (!ids(process.env.TELEGRAM_OWNER_IDS).includes(String(userId))) {
+    act("Чужой пользователь пишет админ-боту");
+    return send(`Бот только для владельца сайта. Ваш ID: ${userId}`);
+  }
 
   const draftKey = `form:${chatId}`; // анкета нового авто (хеш)
   const photosKey = `form-photos:${chatId}`;
@@ -105,6 +152,7 @@ async function handle({ message: msg, callback_query: cb }: Update, origin: stri
     await redis("HSET", "stories", story.id, JSON.stringify(story));
     await redis("DEL", storyKey);
     revalidateTag("stories", { expire: 0 });
+    act(`История опубликована:\n${text}\n${origin}/#stories`);
     return send(`История опубликована:\n${text}\n${origin}/#stories`, manageStory(story));
   };
 
@@ -173,6 +221,7 @@ async function handle({ message: msg, callback_query: cb }: Update, origin: stri
         await redis("HSET", "cars", car.id, JSON.stringify(car));
         await clearDraft();
         revalidateTag("cars", { expire: 0 });
+        act(`Авто опубликовано:\n${summary(car)}\n${origin}/cars/${car.id}`);
         await edit(`Опубликовано:\n${summary(car)}`);
         await send(`${origin}/cars/${car.id}`, manage(car));
       }
@@ -200,6 +249,7 @@ async function handle({ message: msg, callback_query: cb }: Update, origin: stri
       else {
         await redis("HDEL", "stories", story.id);
         revalidateTag("stories", { expire: 0 });
+        act(`История удалена: ${snippet(story.text)}`);
         await edit(`Удалено с сайта: ${snippet(story.text)}`);
         note = "Удалено";
       }
@@ -215,6 +265,7 @@ async function handle({ message: msg, callback_query: cb }: Update, origin: stri
       } else if (action === "del") {
         await redis("HDEL", "cars", car.id);
         revalidateTag("cars", { expire: 0 });
+        act(`Авто снято с сайта: ${title(car)}, ${rub(car.price)}`);
         await edit(`Снято с сайта: ${title(car)}`);
         note = "Снято";
       }
@@ -251,9 +302,11 @@ async function handle({ message: msg, callback_query: cb }: Update, origin: stri
     await redis("DEL", editKey);
     const saved = await redis<string | null>("HGET", "cars", editId);
     if (!saved) return send("Это авто уже снято с сайта.");
-    const car: Car = { ...JSON.parse(saved), price: Number(price) };
+    const old: Car = JSON.parse(saved);
+    const car: Car = { ...old, price: Number(price) };
     await redis("HSET", "cars", car.id, JSON.stringify(car));
     revalidateTag("cars", { expire: 0 });
+    act(`Цена изменена: ${title(car)}\nБыло ${rub(old.price)}, стало ${rub(car.price)}\n${origin}/cars/${car.id}`);
     return send(`Цена обновлена: ${title(car)} — ${rub(car.price)}`);
   }
 
