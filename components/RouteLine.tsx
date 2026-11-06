@@ -6,7 +6,7 @@ import { MAP_H, MAP_W, cities, land, route, russia } from "./map-data";
 
 // Фон-карта: маршрут по карте России, иконка едет по мере скролла всей страницы
 // (финиш — когда в кадр входит форма заявки, она закрывает карту).
-// На вертикальном экране карта повёрнута: восток сверху, Краснодар внизу.
+// На вертикальном экране карта повёрнута: восток сверху, финиш внизу.
 type Pt = [number, number];
 type Line = { pts: Pt[]; cum: number[]; total: number };
 type View = { s: number; rot: 0 | 90; tx: number; ty: number };
@@ -63,7 +63,7 @@ const facesLeft = ({ pts }: Line, rot: number) => {
 
 // Доля скролла, на которой морская/китайская ветка доходит до Владивостока
 const BRANCH = 0.2;
-// Точки остановки для prefers-reduced-motion: порты, Владивосток, в пути, Краснодар
+// Точки остановки для prefers-reduced-motion: порты, Владивосток, в пути, финиш
 const STOPS = [0, BRANCH, 0.6, 1];
 const ICON = 32;
 
@@ -147,7 +147,7 @@ export default function RouteLine() {
         Пусан: true,
         Суйфэньхэ: true,
         Владивосток: onTrunk,
-        Краснодар: finished,
+        "Ваш город": finished,
       };
       for (const [name, g] of Object.entries(dots.current)) g?.classList.toggle("on", !!lit[name]);
     };

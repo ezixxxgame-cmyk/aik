@@ -8,8 +8,8 @@ const jost = Jost({ variable: "--font-jost", subsets: ["latin", "cyrillic"], wei
 const onest = Onest({ variable: "--font-onest", subsets: ["latin", "cyrillic"] });
 
 export const metadata: Metadata = {
-  title: "A.I.K. — авто из Кореи и Китая под ключ в Краснодаре",
-  description: "Подбор, выкуп, таможня и доставка авто из Кореи и Китая с выдачей в Краснодаре. Прозрачный расчёт цены.",
+  title: "A.I.K. — авто из Кореи и Китая под ключ с доставкой по России",
+  description: "Подбор, выкуп, таможня и доставка авто из Кореи и Китая в любой город России. Прозрачный расчёт цены.",
 };
 
 export const viewport: Viewport = {
@@ -22,7 +22,7 @@ export const viewport: Viewport = {
 const themeScript = `try{var t=localStorage.getItem("theme");document.documentElement.dataset.theme=t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch(e){}`;
 
 const contract = `<!--
-THESIS: маршрут сделки как чертёж — линия от Пусана и Суйфэньхэ до ключа в Краснодаре ведёт весь скролл; отказ от тёмного «люкс»-героя с фото и красной кнопкой.
+THESIS: маршрут сделки как чертёж — линия от Пусана и Суйфэньхэ до ключа в городе клиента ведёт весь скролл; отказ от тёмного «люкс»-героя с фото и красной кнопкой.
 OWN-WORLD: холодный серо-голубой грунт, сланцево-синие чернила, жёлтый ключ только для действия; чертёжные уголки, табличные цифры, плотные заглавные Jost.
 STORY: срок и этапы в днях → реальные авто с ценой по статьям → заявка или Telegram.
 FIRST VIEWPORT: крупный оффер «под ключ за ~30 дней», жёлтая кнопка «Подобрать авто» в зоне большого пальца, под ней билет маршрута с иконками.

@@ -1,5 +1,4 @@
 import RouteLine from "@/components/RouteLine";
-import BudgetPicker from "@/components/BudgetPicker";
 import LeadForm from "@/components/LeadForm";
 import { CarRow } from "@/components/car";
 import { ArrowIcon, CarIcon, DocIcon, KeyIcon, PhoneIcon, PinIcon, ShipIcon, TelegramIcon } from "@/components/icons";
@@ -10,7 +9,6 @@ const h2 = "display text-[clamp(2rem,7vw,3.5rem)]";
 
 export default async function Home() {
   const cars = await getCars();
-  const budgetItems = cars.map((c) => ({ id: c.id, title: `${c.make} ${c.model}`, year: c.year, total: c.price }));
 
   return (
     <main className="relative">
@@ -23,7 +21,7 @@ export default async function Home() {
             Авто из&nbsp;Кореи и&nbsp;Китая под&nbsp;ключ за&nbsp;<span className="num whitespace-nowrap">~{site.termDays}&nbsp;дней</span>
           </h1>
           <p className="mt-5 max-w-[34rem] text-lg leading-relaxed text-ink-2">
-            Выкупаем, проверяем, растаможиваем и привозим в Краснодар. Цену раскладываем по статьям до оплаты — вы видите, за что платите.
+            Выкупаем, проверяем, растаможиваем и привозим в любой город России. Цену раскладываем по статьям до оплаты — вы видите, за что платите.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <a
@@ -50,7 +48,7 @@ export default async function Home() {
               <li aria-hidden className="text-ink-2">→</li>
               <li>Владивосток</li>
               <li aria-hidden className="text-ink-2">→</li>
-              <li className="flex items-center gap-1.5"><KeyIcon className="size-5 text-[#c99a12] dark:text-key" /> Краснодар</li>
+              <li className="flex items-center gap-1.5"><KeyIcon className="size-5 text-[#c99a12] dark:text-key" /> Ваш город</li>
             </ol>
           </div>
         </div>
@@ -87,7 +85,7 @@ export default async function Home() {
         <h2 className={h2}>Сейчас в&nbsp;подборке</h2>
         {cars.length ? (
           <>
-            <p className="mt-4 max-w-xl text-ink-2">Авто, которые мы отобрали и можем привезти сейчас. Цена — под ключ в Краснодаре.</p>
+            <p className="mt-4 max-w-xl text-ink-2">Авто, которые мы отобрали и можем привезти сейчас. Цена — под ключ, точную сумму с доставкой в ваш город фиксируем в договоре.</p>
             <div className="mt-8 border-b border-line">
               {cars.map((c) => (
                 <CarRow key={c.id} car={c} />
@@ -99,14 +97,6 @@ export default async function Home() {
             Подборка обновляется. <a href="#lead" className="font-medium text-ink underline">Оставьте заявку</a> — пришлём варианты под ваш бюджет.
           </p>
         )}
-      </section>
-
-      {/* Бюджет */}
-      <section className="relative z-10 bg-ground-2/60">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
-          <h2 className={`${h2} mb-10`}>Что вы получите за&nbsp;свой бюджет</h2>
-          <BudgetPicker items={budgetItems} />
-        </div>
       </section>
 
       {/* Заявка */}

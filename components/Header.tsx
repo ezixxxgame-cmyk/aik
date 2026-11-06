@@ -15,11 +15,9 @@ export default function Header() {
     <header className="sticky top-0 z-30 border-b border-line bg-ground/90 backdrop-blur-sm">
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4 sm:px-6">
         <Link href="/" className="mr-auto flex items-center gap-2.5" aria-label="A.I.K. — на главную">
-          <Image src="/logo.png" alt="" width={182} height={104} className="h-8 w-auto rounded-sm" priority />
+          <Image src="/logo.png" alt="" width={182} height={92} className="h-8 w-auto rounded-sm" priority />
           <span className="hidden font-display text-sm font-semibold uppercase leading-tight tracking-wide text-ink-2 sm:block">
             Auto Import
-            <br />
-            Krasnodar
           </span>
         </Link>
         <nav aria-label="Основное" className="hidden items-center gap-1 md:flex">
