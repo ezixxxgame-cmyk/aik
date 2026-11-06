@@ -4,24 +4,19 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import PriceBox from "@/components/PriceBox";
 import { AgeNote, Blockers, CarPhoto } from "@/components/car";
-import { cars, countryName, getCar, labels } from "@/lib/catalog";
+import { getCar } from "@/lib/cars";
+import { countryName } from "@/lib/catalog";
 
-export function generateStaticParams() {
-  return cars.map((c) => ({ id: c.id }));
-}
-
-export async function generateMetadata({ params }: PageProps<"/catalog/[id]">): Promise<Metadata> {
-  const car = getCar((await params).id);
+export async function generateMetadata({ params }: PageProps<"/cars/[id]">): Promise<Metadata> {
+  const car = await getCar((await params).id);
   return { title: car ? `${car.make} ${car.model} ${car.year} — A.I.K.` : "Авто не найдено — A.I.K." };
 }
 
-const angles = ["Спереди", "Сбоку", "Салон", "Сзади"];
-
-export default function CarPage({ params }: PageProps<"/catalog/[id]">) {
+export default function CarPage({ params }: PageProps<"/cars/[id]">) {
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:py-12">
-      <Link href="/catalog" className="inline-flex h-11 items-center text-sm font-medium underline decoration-ink/30">
-        ← Каталог
+      <Link href="/#selection" className="inline-flex h-11 items-center text-sm font-medium underline decoration-ink/30">
+        ← Подборка
       </Link>
       <Suspense>
         <CarView params={params} />
@@ -30,18 +25,15 @@ export default function CarPage({ params }: PageProps<"/catalog/[id]">) {
   );
 }
 
-async function CarView({ params }: Pick<PageProps<"/catalog/[id]">, "params">) {
-  const car = getCar((await params).id);
+async function CarView({ params }: Pick<PageProps<"/cars/[id]">, "params">) {
+  const car = await getCar((await params).id);
   if (!car) notFound();
 
   const specs: [string, string][] = [
     ["Год выпуска", `${String(car.month).padStart(2, "0")}.${car.year}`],
     ["Пробег", `${new Intl.NumberFormat("ru-RU").format(car.mileage)} км`],
-    ["Двигатель", `${(car.cc / 1000).toFixed(1)} л, ${car.hp} л. с., ${labels[car.fuel].toLowerCase()}`],
-    ["Коробка", labels[car.transmission]],
-    ["Привод", labels[car.drive]],
-    ["Кузов", labels[car.body]],
-    ["Цвет", car.color],
+    ["Двигатель", `${(car.cc / 1000).toFixed(1)} л, ${car.hp} л. с., ${car.fuel.toLowerCase()}`],
+    ["Коробка", car.transmission],
     ["Комплектация", car.grade],
     ["Страна", countryName[car.country]],
     ["Номер лота", car.id],
@@ -60,19 +52,21 @@ async function CarView({ params }: Pick<PageProps<"/catalog/[id]">, "params">) {
       <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,4fr)] lg:items-start">
         <div className="min-w-0">
           <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0">
-            {angles.slice(0, car.photos).map((a, i) => (
+            {car.photos.map((src, i) => (
               <CarPhoto
-                key={a}
+                key={i}
                 car={car}
-                angle={`${a} · заглушка`}
-                className={`w-[85%] shrink-0 snap-center sm:w-auto ${i === 0 ? "sm:col-span-3" : ""}`}
+                src={src}
+                sizes={i ? "(min-width: 640px) 240px, 85vw" : "(min-width: 1024px) 700px, 90vw"}
+                preload={i === 0}
+                className={`w-[85%] shrink-0 snap-center sm:w-full ${i === 0 ? "sm:col-span-3" : ""}`}
               />
             ))}
           </div>
 
           <h2 className="mt-10 font-display text-2xl font-extrabold uppercase">Характеристики</h2>
           <dl className="mt-4 grid sm:grid-cols-2 sm:gap-x-8">
-            {specs.map(([k, v]) => (
+            {specs.filter(([, v]) => v).map(([k, v]) => (
               <div key={k} className="flex justify-between gap-4 border-t border-line py-3">
                 <dt className="text-ink-2">{k}</dt>
                 <dd className="num text-right font-medium">{v}</dd>

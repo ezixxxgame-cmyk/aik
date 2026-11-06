@@ -1,9 +1,6 @@
-import feed from "@/data/cars.json";
 import { pricing } from "@/config/pricing";
 
-// Адаптер фида: при подключении реального API меняется только эта функция.
-type FeedItem = (typeof feed.items)[number];
-
+// Авто из подборки. Добавляет владелец через Telegram-бота (app/api/bot), хранится в lib/cars.ts.
 export type Car = {
   id: string;
   country: "KR" | "CN";
@@ -17,50 +14,14 @@ export type Car = {
   hp: number;
   fuel: string;
   transmission: string;
-  drive: string;
-  body: string;
-  color: string;
   price: number;
   currency: string;
-  photos: number;
+  photos: string[]; // file_id фото в Telegram
 };
-
-const fromFeed = (i: FeedItem): Car => ({
-  id: i.lot_id,
-  country: i.country as Car["country"],
-  make: i.make,
-  model: i.model,
-  grade: i.grade,
-  year: i.year,
-  month: i.month,
-  mileage: i.mileage_km,
-  cc: i.engine.displacement_cc,
-  hp: i.engine.power_hp,
-  fuel: i.engine.fuel,
-  transmission: i.transmission,
-  drive: i.drive,
-  body: i.body,
-  color: i.color,
-  price: i.price.amount,
-  currency: i.price.currency,
-  photos: i.photos,
-});
-
-export const cars: Car[] = feed.items.map(fromFeed);
-export const getCar = (id: string) => cars.find((c) => c.id === id);
 
 export const countryName = { KR: "Корея", CN: "Китай" } as const;
 
-export const labels: Record<string, string> = {
-  petrol: "Бензин",
-  diesel: "Дизель",
-  automatic: "Автомат",
-  fwd: "Передний",
-  awd: "Полный",
-  suv: "Кроссовер",
-  sedan: "Седан",
-  minivan: "Минивэн",
-};
+export const photoUrl = (fileId: string) => `/api/photo/${fileId}`;
 
 // Возраст в месяцах на дату расчёта
 export function ageMonths(car: Car, asOf = pricing.asOf) {

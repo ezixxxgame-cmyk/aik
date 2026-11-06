@@ -1,21 +1,12 @@
-import Link from "next/link";
 import RouteLine from "@/components/RouteLine";
 import BudgetPicker from "@/components/BudgetPicker";
 import LeadForm from "@/components/LeadForm";
 import { CarRow } from "@/components/car";
 import { ArrowIcon, CarIcon, DocIcon, KeyIcon, PhoneIcon, PinIcon, ShipIcon, TelegramIcon } from "@/components/icons";
 import { faq, site, stages, telegramUrl } from "@/config/site";
-import { blockers, cars } from "@/lib/catalog";
+import { getCars } from "@/lib/cars";
+import { blockers } from "@/lib/catalog";
 import { calcPrice } from "@/lib/pricing";
-
-const featured = [...cars].sort((a, b) => blockers(a).length - blockers(b).length).slice(0, 6);
-const budgetItems = cars.map((c) => ({
-  id: c.id,
-  title: `${c.make} ${c.model}`,
-  year: c.year,
-  total: calcPrice(c).total,
-  blocked: blockers(c).length > 0,
-}));
 
 const stories = [
   { car: "Kia K5, 2023", city: "Краснодар", days: 29 },
@@ -25,7 +16,16 @@ const stories = [
 
 const h2 = "display text-[clamp(2rem,7vw,3.5rem)]";
 
-export default function Home() {
+export default async function Home() {
+  const cars = await getCars();
+  const budgetItems = cars.map((c) => ({
+    id: c.id,
+    title: `${c.make} ${c.model}`,
+    year: c.year,
+    total: calcPrice(c).total,
+    blocked: blockers(c).length > 0,
+  }));
+
   return (
     <main className="relative">
       <RouteLine />
@@ -97,24 +97,22 @@ export default function Home() {
       </section>
 
       {/* Подборка */}
-      <section className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
+      <section id="selection" className="relative z-10 mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6 md:py-24">
         <h2 className={h2}>Сейчас в&nbsp;подборке</h2>
-        <p className="mt-4 max-w-xl text-ink-2">Демо-каталог: тестовые лоты из Кореи и Китая. Цена — под ключ в Краснодаре.</p>
-        <div className="mt-8 border-b border-line">
-          {featured.map((c) => (
-            <CarRow key={c.id} car={c} />
-          ))}
-        </div>
-        <Link
-          href="/catalog"
-          className="group mt-8 flex h-16 w-full items-center justify-between gap-4 rounded-[10px] bg-ink px-6 text-ground shadow-[0_10px_24px_-14px_rgb(47_59_92/0.7)] transition-colors hover:bg-ink-2 sm:inline-flex sm:w-auto sm:min-w-[22rem]"
-        >
-          <span className="font-display text-xl font-semibold uppercase tracking-wide">Открыть каталог</span>
-          <span className="flex items-center gap-2 text-sm text-ground/70">
-            <span className="num">{cars.length} авто</span>
-            <ArrowIcon className="size-6 text-ground transition-transform group-hover:translate-x-1 motion-reduce:transition-none" />
-          </span>
-        </Link>
+        {cars.length ? (
+          <>
+            <p className="mt-4 max-w-xl text-ink-2">Авто, которые мы отобрали и можем привезти сейчас. Цена — под ключ в Краснодаре.</p>
+            <div className="mt-8 border-b border-line">
+              {cars.map((c) => (
+                <CarRow key={c.id} car={c} />
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="mt-4 max-w-xl text-ink-2">
+            Подборка обновляется. <a href="#lead" className="font-medium text-ink underline">Оставьте заявку</a> — пришлём варианты под ваш бюджет.
+          </p>
+        )}
       </section>
 
       {/* Бюджет */}

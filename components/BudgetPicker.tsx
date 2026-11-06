@@ -45,13 +45,13 @@ export default function BudgetPicker({ items }: { items: Item[] }) {
 
       <div aria-live="polite">
         <p className="num text-sm text-ink-2">
-          {fit.length ? `Подходит ${fit.length} из ${items.length} авто в демо-каталоге` : "В демо-каталоге нет авто в этом бюджете — подберём под заказ"}
+          {fit.length ? `Подходит ${fit.length} из ${items.length} авто в подборке` : "В подборке нет авто в этом бюджете — подберём под заказ"}
         </p>
         <ul className="mt-3">
           {fit.slice(0, 4).map((i) => (
             <li key={i.id}>
               <Link
-                href={`/catalog/${i.id}`}
+                href={`/cars/${i.id}`}
                 className="flex items-baseline justify-between gap-4 border-t border-line py-3 hover:underline"
               >
                 <span className="min-w-0 truncate">
@@ -63,12 +63,9 @@ export default function BudgetPicker({ items }: { items: Item[] }) {
             </li>
           ))}
         </ul>
-        <Link
-          href={`/catalog?max=${max}`}
-          className="mt-3 inline-flex h-11 items-center gap-2 border-t border-line pt-3 text-sm font-semibold underline"
-        >
-          Все варианты до {fmt(max)} ₽ в каталоге
-        </Link>
+        <a href="#lead" className="mt-3 inline-flex h-11 items-center gap-2 border-t border-line pt-3 text-sm font-semibold underline">
+          Подобрать авто до {fmt(max)} ₽
+        </a>
       </div>
     </div>
   );

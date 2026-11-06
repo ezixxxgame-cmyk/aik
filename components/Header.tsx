@@ -6,7 +6,7 @@ import { telegramUrl } from "@/config/site";
 
 const nav = [
   { href: "/#stages", label: "Этапы" },
-  { href: "/catalog", label: "Каталог" },
+  { href: "/#selection", label: "Подборка" },
   { href: "/#faq", label: "Вопросы" },
 ];
 
@@ -40,10 +40,10 @@ export default function Header() {
         </a>
         <ThemeToggle />
         <Link
-          href="/catalog"
+          href="/#selection"
           className="ml-1 rounded-full border border-ink/25 px-4 py-2.5 text-sm font-medium hover:border-ink md:hidden"
         >
-          Каталог
+          Подборка
         </Link>
       </div>
     </header>
