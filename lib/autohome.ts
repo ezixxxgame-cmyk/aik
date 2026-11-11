@@ -5,26 +5,32 @@ export type Power = "ice" | "phev" | "ev" | "erev";
 export type Trim = { year: number; price: number; cc: number; hp: number; power: Power; drive: string };
 export type Model = { id: string; brand: string; name: string; level: string; photo: string; trims: Trim[] };
 
-// id бренда на autohome → название; порядок = порядок в каталоге
-export const brands: [number, string][] = [
-  [75, "BYD"],
-  [25, "Geely"],
-  [575, "Geely Galaxy"],
-  [26, "Chery"],
-  [350, "Exeed"],
-  [319, "Jetour"],
-  [181, "Haval"],
-  [458, "Tank"],
-  [76, "Changan"],
-  [530, "Deepal"],
-  [345, "Li Auto"],
-  [456, "Zeekr"],
-  [279, "Lynk & Co"],
-  [609, "Aito"],
-  [425, "Voyah"],
-  [91, "Hongqi"],
-  [489, "Xiaomi"],
+// id бренда на autohome
+const brandIds: Record<string, number> = {
+  Toyota: 3, Volkswagen: 1, Honda: 14, Nissan: 63, Mazda: 58, Kia: 62, Hyundai: 12,
+  Geely: 25, "Geely Galaxy": 575, Chery: 26, Exeed: 350, Jetour: 319, Haval: 181, Tank: 458,
+  Changan: 76, BYD: 75, "Lynk & Co": 279, Hongqi: 91, Wuling: 114,
+};
+
+// Кандидаты в каталог по ликвидности в России, самые ходовые сверху. Названия — как после modelName().
+// Из них при обходе отбираются модели с адекватным утильсбором по ценовым группам (pick в lib/customs.ts).
+export const pool: [string, string][] = [
+  ["Toyota", "Camry"], ["Toyota", "RAV4"], ["Geely", "Monjaro"], ["Geely", "Coolray"], ["Haval", "H6"],
+  ["Chery", "Tiggo 7 PLUS"], ["Changan", "CS35PLUS"], ["Changan", "UNI-K"], ["Geely", "Atlas"], ["Chery", "Tiggo 8 PRO"],
+  ["Haval", "Dargo"], ["Tank", "300"], ["Volkswagen", "Tiguan L"], ["Honda", "CR-V"], ["Nissan", "X-Trail"], ["Kia", "Sportage"],
+  ["Hyundai", "Tucson"], ["Mazda", "CX-5"], ["Toyota", "Corolla"], ["Changan", "CS55PLUS"], ["Changan", "UNI-V"],
+  ["Changan", "Eado"], ["Geely", "Emgrand"], ["Geely", "Preface"], ["Geely", "Okavango"], ["Chery", "Tiggo 7"],
+  ["Chery", "Arrizo 8"], ["Exeed", "Lanyue"], ["Exeed", "Yaoguang"], ["Jetour", "Dashing"], ["Jetour", "Traveller"],
+  ["Toyota", "Highlander"], ["Volkswagen", "Passat"], ["Volkswagen", "Magotan"], ["Volkswagen", "Sagitar"],
+  ["Volkswagen", "Lavida"], ["Honda", "Accord"], ["Honda", "Civic"], ["Nissan", "Qashqai"], ["Nissan", "Sylphy"],
+  ["Kia", "K5"], ["Kia", "Seltos"], ["Hyundai", "Elantra"], ["Toyota", "Corolla Cross"], ["Mazda", "3"],
+  ["BYD", "Seagull"], ["BYD", "Dolphin"], ["Lynk & Co", "01"], ["Lynk & Co", "06"], ["Hongqi", "H5"],
+  ["Hongqi", "HS5"], ["Hongqi", "H9"], ["Tank", "500"], ["Volkswagen", "Teramont"], ["Toyota", "Wildlander"],
+  ["Toyota", "Frontlander"], ["Wuling", "Hongguang MINIEV"], ["Wuling", "Bingo"], ["Geely Galaxy", "Panda"],
+  ["Haval", "Raptor"], ["Haval", "H9"], ["Chery", "Tiggo 9"],
 ];
+
+export const rank = (m: Model) => pool.findIndex(([b, n]) => b === m.brand && n === m.name);
 
 const base = "https://car.autohome.com.cn";
 
@@ -82,10 +88,14 @@ export function parseTrims(html: string): Trim[] {
 }
 
 async function brandSeries(id: number, brand: string) {
+  const names = pool.filter(([b]) => b === brand).map(([, n]) => n);
   const series = [];
   for (let path: string | undefined = `/price/brand-${id}.html`; path; ) {
     const html = await page(path);
-    series.push(...parseBrand(html).map((s) => ({ ...s, brand })));
+    for (const s of parseBrand(html)) {
+      const name = modelName(s.name);
+      if (names.includes(name)) series.push({ ...s, name, brand });
+    }
     path = html.match(/class="page-item-next" href="(\/[^"]+)"/)?.[1];
   }
   return series;
@@ -94,7 +104,7 @@ async function brandSeries(id: number, brand: string) {
 export async function fetchModels(): Promise<Model[]> {
   const series = (
     await Promise.all(
-      brands.map(([id, brand]) =>
+      Object.entries(brandIds).map(([brand, id]) =>
         brandSeries(id, brand).catch((e) => {
           console.error(`Каталог: бренд ${brand} не загрузился`, e);
           return [];
@@ -111,11 +121,9 @@ export async function fetchModels(): Promise<Model[]> {
       while (next < series.length) {
         const i = next++;
         const s = series[i];
-        const name = modelName(s.name);
-        if (!name) continue;
         const trims = await page(`/price/series-${s.id}.html`).then(parseTrims, () => []);
         const photo = `https:${s.photo}`.replace(/\/\d+x\d+_/, "/{size}_");
-        if (trims.length) found[i] = { id: s.id, brand: s.brand, name, level: levels[s.level] ?? "", photo, trims };
+        if (trims.length) found[i] = { id: s.id, brand: s.brand, name: s.name, level: levels[s.level] ?? "", photo, trims };
       }
     }),
   );
@@ -133,7 +141,14 @@ export async function fetchModels(): Promise<Model[]> {
 
 export const powerName: Record<Power, string> = { ice: "ДВС", phev: "гибрид", ev: "электро", erev: "EREV" };
 
-export const fuels = (m: Model) => [...new Set(m.trims.map((t) => powerName[t.power]))].join(", ");
+export const fuels = (m: Model) => [...new Set(m.trims.map((t) => powerName[t.power]))];
+
+export const bodyOf = (level: string) =>
+  /кроссовер|внедорожник/.test(level) ? "Кроссовер"
+  : /вэн/.test(level) ? "Минивэн"
+  : level === "пикап" ? "Пикап"
+  : level === "спорткар" ? "Спорткар"
+  : level ? "Седан, хэтчбек" : "";
 
 export const engineText = (t: Trim) =>
   `${t.cc ? `${t.power === "phev" ? "гибрид " : ""}${(t.cc / 1000).toFixed(1)} л` : powerName[t.power]}, ${t.hp} л. с.`;
@@ -166,6 +181,11 @@ export const levels: Record<string, string> = {
 const words = Object.entries({
   比亚迪: "", 吉利: "", 银河: "", 长安: "", 哈弗: "", 长城: "", 红旗: "", 领克: "", 捷途: "",
   理想: "", 星途: "", 岚图: "", 极氪: "", 坦克: "", 小米: "", 深蓝: "", 问界: "", 新能源: "", 燃油: "",
+  丰田: "", 大众: "", 本田: "", 日产: "", 马自达: "", 起亚: "", 北京现代: "", 现代: "", 五菱: "", 荣放: "", 昂克赛拉: "",
+  凯美瑞: "Camry", 汉兰达: "Highlander", 卡罗拉: "Corolla", 锐放: "Cross", 威兰达: "Wildlander", 锋兰达: "Frontlander",
+  途观: "Tiguan", 帕萨特: "Passat", 迈腾: "Magotan", 速腾: "Sagitar", 朗逸: "Lavida", 探岳: "Tayron", 途昂: "Teramont",
+  雅阁: "Accord", 思域: "Civic", 皓影: "Breeze", 奇骏: "X-Trail", 逍客: "Qashqai", 轩逸: "Sylphy", 天籁: "Teana",
+  狮铂拓界: "Sportage", 赛图斯: "Seltos", 途胜: "Tucson", 伊兰特: "Elantra", 索纳塔: "Sonata", 宏光: "Hongguang", 缤果: "Bingo",
   海鸥: "Seagull", 海豚: "Dolphin", 海豹: "Seal", 海狮: "Sealion", 驱逐舰: "Destroyer",
   大汉: "Dahan", 大唐: "Datang", 秦: "Qin", 汉: "Han", 唐: "Tang", 宋: "Song", 元: "Yuan", 夏: "Xia",
   旅行版: "универсал",

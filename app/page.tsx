@@ -32,6 +32,12 @@ export default async function Home() {
             >
               Подобрать авто <ArrowIcon />
             </a>
+            <Link
+              href="/catalog"
+              className="inline-flex h-14 items-center justify-center gap-3 rounded-[10px] border-2 border-ink px-8 text-lg font-semibold transition-colors hover:bg-ink hover:text-ground"
+            >
+              Каталог авто
+            </Link>
             <a
               href={telegramUrl()}
               target="_blank"
@@ -99,7 +105,10 @@ export default async function Home() {
             Подборка обновляется. <a href="#lead" className="font-medium text-ink underline">Оставьте заявку</a> — пришлём варианты под ваш бюджет.
           </p>
         )}
-        <Link href="/catalog" className="mt-6 inline-flex min-h-11 items-center gap-2 font-medium underline decoration-ink/30 hover:decoration-ink">
+        <Link
+          href="/catalog"
+          className="mt-8 flex h-16 w-full items-center justify-center gap-3 rounded-[10px] border-2 border-ink px-8 text-lg font-semibold transition-colors hover:bg-ink hover:text-ground sm:w-auto sm:inline-flex"
+        >
           Каталог новых авто из Китая <ArrowIcon />
         </Link>
       </section>

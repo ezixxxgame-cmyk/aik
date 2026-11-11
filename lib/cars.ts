@@ -14,6 +14,8 @@ export async function redis<T>(...command: (string | number)[]): Promise<T> {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify(command),
+    // Кэширует "use cache" выше; fetch-кэш Next отдал бы старый ответ Redis ещё 15 минут
+    cache: "no-store",
   });
   const data = await res.json();
   if (data.error) throw new Error(`Redis: ${data.error}`);
