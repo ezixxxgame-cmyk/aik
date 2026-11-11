@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import PriceBox from "@/components/PriceBox";
 import { CarPhoto } from "@/components/car";
 import { getCar } from "@/lib/cars";
-import { countryName } from "@/lib/catalog";
+import { countryName, rub } from "@/lib/catalog";
 
 export async function generateMetadata({ params }: PageProps<"/cars/[id]">): Promise<Metadata> {
   const car = await getCar((await params).id);
@@ -73,7 +73,10 @@ async function CarView({ params }: Pick<PageProps<"/cars/[id]">, "params">) {
         </div>
 
         <div className="lg:sticky lg:top-24">
-          <PriceBox car={car} />
+          <PriceBox
+            price={car.price}
+            message={`Здравствуйте! Интересует ${car.make} ${car.model} ${car.year} за ${rub(car.price)} (номер ${car.id}).`}
+          />
         </div>
       </div>
     </>

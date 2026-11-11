@@ -1,5 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
+import type { Model } from "@/lib/autohome";
 import type { Car, Story } from "@/lib/catalog";
+import { fetchRates, type Rates } from "@/lib/customs";
 
 // Подборка хранится в Upstash Redis: хеш "cars" (id → JSON авто). Пишет бот, читает сайт.
 // Переменные создаёт интеграция Upstash в Vercel (KV_*) или берутся из консоли Upstash (UPSTASH_*).
@@ -41,3 +43,20 @@ export async function getStories(): Promise<Story[]> {
 }
 
 export const getCar = async (id: string) => (await getCars()).find((c) => c.id === id);
+
+// Каталог новых авто из Китая: ключ "catalog" (JSON), пишет app/api/catalog раз в сутки
+export async function getModels(): Promise<Model[]> {
+  "use cache";
+  cacheTag("catalog");
+  cacheLife("max");
+  if (!url) return [];
+  return JSON.parse((await redis<string | null>("GET", "catalog")) ?? "[]");
+}
+
+export const getModel = async (id: string) => (await getModels()).find((m) => m.id === id);
+
+export async function getRates(): Promise<Rates> {
+  "use cache";
+  cacheLife("days");
+  return fetchRates();
+}

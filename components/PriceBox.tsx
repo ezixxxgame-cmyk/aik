@@ -1,15 +1,16 @@
 import Link from "next/link";
 import { TelegramIcon } from "./icons";
 import { telegramUrl } from "@/config/site";
-import { rub, type Car } from "@/lib/catalog";
+import { rub } from "@/lib/catalog";
 
-export default function PriceBox({ car }: { car: Car }) {
-  const message = `Здравствуйте! Интересует ${car.make} ${car.model} ${car.year} за ${rub(car.price)} (номер ${car.id}).`;
+type Props = { price: number; message: string; label?: string; children?: React.ReactNode };
 
+export default function PriceBox({ price, message, label = "Под ключ", children }: Props) {
   return (
     <div className="rounded-lg bg-paper p-5 shadow-[0_18px_40px_-24px_rgb(47_59_92/0.55)] sm:p-6">
-      <p className="text-sm text-ink-2">Под ключ</p>
-      <p className="num font-display text-[clamp(2rem,8vw,2.75rem)] font-semibold leading-tight">от {rub(car.price)}</p>
+      <p className="text-sm text-ink-2">{label}</p>
+      <p className="num font-display text-[clamp(2rem,8vw,2.75rem)] font-semibold leading-tight">от {rub(price)}</p>
+      {children}
       <p className="mt-2 text-xs leading-relaxed text-ink-2">Точную цену зафиксирует менеджер в договоре.</p>
 
       <div className="mt-5 grid gap-2">

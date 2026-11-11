@@ -1,3 +1,4 @@
+import Link from "next/link";
 import RouteLine from "@/components/RouteLine";
 import LeadForm from "@/components/LeadForm";
 import Stories from "@/components/Stories";
@@ -98,6 +99,9 @@ export default async function Home() {
             Подборка обновляется. <a href="#lead" className="font-medium text-ink underline">Оставьте заявку</a> — пришлём варианты под ваш бюджет.
           </p>
         )}
+        <Link href="/catalog" className="mt-6 inline-flex min-h-11 items-center gap-2 font-medium underline decoration-ink/30 hover:decoration-ink">
+          Каталог новых авто из Китая <ArrowIcon />
+        </Link>
       </section>
 
       <Stories stories={stories} />

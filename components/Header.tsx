@@ -7,6 +7,7 @@ import { telegramUrl } from "@/config/site";
 const nav = [
   { href: "/#stages", label: "Этапы" },
   { href: "/#selection", label: "Подборка" },
+  { href: "/catalog", label: "Каталог" },
   { href: "/#faq", label: "Вопросы" },
 ];
 
