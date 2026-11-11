@@ -33,15 +33,15 @@ export default function Stories({ stories }: { stories: Story[] }) {
   const rest = stories.slice(SHOWN);
 
   return (
-    <section id="stories" className="relative z-10 mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6 md:py-24">
+    <section id="stories" className="relative z-10 mx-auto max-w-6xl scroll-mt-20 px-4 py-12 sm:px-6 md:py-14">
       <h2 className="display text-[clamp(2rem,7vw,3.5rem)]">Истории клиентов</h2>
-      <div className={`mt-10 ${grid}`}>
+      <div className={`mt-8 ${grid}`}>
         {stories.slice(0, SHOWN).map((s) => (
           <Item key={s.id} story={s} />
         ))}
       </div>
       {rest.length > 0 && (
-        <details className="group mt-12">
+        <details className="group mt-10">
           <summary className="inline-flex h-12 cursor-pointer items-center rounded-[10px] border border-ink/25 px-6 font-medium hover:border-ink group-open:hidden">
             {more(rest.length)}
           </summary>

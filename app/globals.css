@@ -112,134 +112,27 @@ details[open] .faq-plus {
   transform: rotate(45deg);
 }
 
-/* Карта маршрута */
-.map-land {
-  fill: none;
-  stroke: var(--ink);
-  stroke-opacity: 0.12;
-  stroke-width: 1;
+/* Карта-фон (рисует canvas в RouteLine): притемнена под текстом везде, кроме этапов */
+.map-dim {
+  opacity: 0.45;
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.map-russia {
-  fill: var(--ink);
-  fill-opacity: 0.055;
-  stroke: var(--ink);
-  stroke-opacity: 0.3;
-  stroke-width: 1;
-}
-.map-route {
-  fill: none;
-  stroke: var(--ink);
-  stroke-opacity: 0.4;
-  stroke-width: 1.5;
-  stroke-dasharray: 2 6;
-  stroke-linecap: round;
-}
-.map-road-edge,
-.map-road {
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.map-road-edge {
-  stroke: var(--ink);
-  stroke-opacity: 0.32;
-  stroke-width: 9;
-}
-.map-road {
-  stroke: var(--ground-2);
-  stroke-width: 7;
-}
-.map-lane {
-  fill: none;
-  stroke: var(--ink);
-  stroke-opacity: 0.45;
-  stroke-width: 1;
-  stroke-dasharray: 4 5;
-}
-@media (orientation: portrait) {
-  .map-road-edge {
-    stroke-width: 7;
-  }
-  .map-road {
-    stroke-width: 5;
-  }
-}
-.map-done {
-  fill: none;
-  stroke: var(--route-done);
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.map-dot {
-  fill: var(--ground);
-  stroke: var(--ink);
-  stroke-width: 1.5;
-  transition: fill 0.4s;
-}
-.map-city.on .map-dot {
-  fill: var(--key);
-}
-.map-pulse {
-  fill: none;
-  stroke: var(--route-done);
-  stroke-width: 1.5;
+.map[data-stage] .map-dim {
   opacity: 0;
 }
-.map-city.on .map-pulse {
-  animation: map-pulse 1.1s cubic-bezier(0.2, 0.7, 0.3, 1);
-}
-@keyframes map-pulse {
-  from {
-    opacity: 0.9;
-    scale: 1;
-  }
-  to {
-    opacity: 0;
-    scale: 4.5;
+@media (orientation: portrait), (max-width: 1023px) {
+  .map[data-stage] .map-dim {
+    opacity: 0.2;
   }
 }
-.map-dot-minor {
-  fill: var(--ink);
-  fill-opacity: 0.4;
-}
-.map-label {
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  fill: var(--ink);
-  fill-opacity: 0.6;
-}
-.map-label-minor {
-  fill: var(--ink);
-  fill-opacity: 0.38;
-}
-@media (orientation: portrait) {
-  .map-city-sm text {
-    display: none;
-  }
-}
-.map-icon {
-  color: var(--ink);
-}
-.map-icon-in {
-  transition:
-    opacity 0.45s ease-out,
-    transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.map-icon.off .map-icon-in {
+/* Стартовая анимация — в полную яркость, затемнение наступает после */
+.map[data-intro] .map-dim {
   opacity: 0;
-  transform: scale(0.35);
-}
-.map-key {
-  color: var(--on-key);
+  transition-duration: 1.4s;
 }
 @media (prefers-reduced-motion: reduce) {
-  .map-city.on .map-pulse {
-    animation: none;
-  }
-  .map-icon-in {
-    transition: opacity 0.2s;
+  .map-dim {
+    transition: none;
   }
 }
 
