@@ -57,7 +57,7 @@ export default function CatalogFilter({ cards }: { cards: Card[] }) {
 
   return (
     <>
-      <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+      <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         {field("brand", "Марка", [["", "Все марки"], ...[...new Set(cards.map((c) => c.brand))].sort().map((b) => [b, b])])}
         {field("body", "Кузов", [["", "Любой"], ...bodies.filter((b) => cards.some((c) => c.body === b)).map((b) => [b, b])])}
         {field("fuel", "Двигатель", [["", "Любой"], ...engines])}
