@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import CatalogFilter from "@/components/CatalogFilter";
-import { bodyOf, fuels, modelPhoto, powerName } from "@/lib/autohome";
+import { bodyOf, modelPhoto, powerName } from "@/lib/autohome";
 import { getModels, getRates } from "@/lib/cars";
 import { turnkey } from "@/lib/customs";
 
@@ -18,10 +18,12 @@ export default async function CatalogPage() {
     name: m.name,
     level: m.level,
     body: bodyOf(m.level),
-    // минимальная цена под ключ по каждому типу двигателя: фильтр «Гибрид» показывает цену гибрида
-    prices: Object.fromEntries(
-      fuels(m).map((f) => [f, Math.min(...m.trims.filter((t) => powerName[t.power] === f).map((t) => turnkey(t, rates).total))]),
-    ),
+    // минимальная цена под ключ по паре «двигатель|год»: фильтр «Гибрид, 2025» показывает цену гибрида 2025 года
+    prices: m.trims.reduce<Record<string, number>>((acc, t) => {
+      const key = `${powerName[t.power]}|${t.year}`;
+      acc[key] = Math.min(acc[key] ?? Infinity, turnkey(t, rates).total);
+      return acc;
+    }, {}),
     photo: modelPhoto(m, "480x360"),
   }));
 
