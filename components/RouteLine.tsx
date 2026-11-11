@@ -102,12 +102,16 @@ export default function RouteLine() {
     let arrive: Record<string, number> = {};
     let introEnd = 0;
 
+    // Холст ровно по размеру слоя, CSS его не масштабирует — карта не растягивается
     const layout = () => {
-      W = html.clientWidth;
-      H = html.clientHeight;
+      const rect = el.getBoundingClientRect();
+      W = Math.round(rect.width);
+      H = Math.round(rect.height);
       dpr = Math.min(devicePixelRatio || 1, 2);
       cv.width = Math.round(W * dpr);
       cv.height = Math.round(H * dpr);
+      cv.style.width = `${W}px`;
+      cv.style.height = `${H}px`;
       portrait = W < H;
       s = portrait ? Math.min((W * 0.96) / MAP_H, (H * 0.86) / MAP_W) : Math.min(W / MAP_W, H / MAP_H);
       const tx = portrait ? (W - MAP_H * s) / 2 : (W - MAP_W * s) / 2;
@@ -514,15 +518,14 @@ export default function RouteLine() {
       raf = requestAnimationFrame(frame);
     }
 
-    // На телефоне высота скачет от адресной строки — раскладку не пересчитываем
-    let size: Pt = [W, H];
-    const onResize = () => {
-      if (html.clientWidth === size[0] && Math.abs(html.clientHeight - size[1]) < 150) return;
+    // Слой высотой в «большой» экран (lvh): адресная строка телефона его не меняет, пересчёт — только при реальной смене размера
+    const ro = new ResizeObserver(([e]) => {
+      const { width, height } = e.contentRect;
+      if (Math.round(width) === W && Math.round(height) === H) return;
       layout();
-      size = [W, H];
       if (reduce) still();
-    };
-    addEventListener("resize", onResize);
+    });
+    ro.observe(el);
     const mo = new MutationObserver(() => {
       theme();
       if (reduce) still();
@@ -546,15 +549,15 @@ export default function RouteLine() {
 
     return () => {
       cancelAnimationFrame(raf);
-      removeEventListener("resize", onResize);
+      ro.disconnect();
       mo.disconnect();
       io.disconnect();
     };
   }, []);
 
   return (
-    <div ref={root} aria-hidden className="map pointer-events-none fixed inset-0 z-0 overflow-hidden">
-      <canvas ref={canvas} className="absolute inset-0 size-full" />
+    <div ref={root} aria-hidden className="map pointer-events-none fixed inset-x-0 top-0 z-0 h-lvh overflow-hidden">
+      <canvas ref={canvas} className="absolute top-0 left-0" />
       <div className="map-dim absolute inset-0 bg-ground" />
     </div>
   );
